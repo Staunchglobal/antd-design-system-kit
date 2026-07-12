@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { readTemplateFile, type TemplateRoot } from './templates.js'
+import { readTemplateFile, readTemplateRootFile, type TemplateRoot } from './templates.js'
 
 export type CopyResult = { relPath: string; status: 'written' | 'skipped' | 'missing' }
 
@@ -33,6 +33,24 @@ export function copySelectedFiles(
     results.push({ relPath, status: 'written' })
   }
   return results
+}
+
+/** For the rare file that lives at the project root, not under src/ (e.g. vite-plugin-design-kit.ts). */
+export function copyTemplateRootFile(
+  templateRoot: TemplateRoot,
+  destRoot: string,
+  relPath: string,
+  dryRun: boolean
+): CopyResult {
+  const destPath = path.join(destRoot, relPath)
+  if (fs.existsSync(destPath)) return { relPath, status: 'skipped' }
+  const content = readTemplateRootFile(templateRoot, relPath)
+  if (content === null) return { relPath, status: 'missing' }
+  if (!dryRun) {
+    fs.mkdirSync(path.dirname(destPath), { recursive: true })
+    fs.writeFileSync(destPath, content)
+  }
+  return { relPath, status: 'written' }
 }
 
 export function writeGeneratedFile(destDir: string, relPath: string, content: string, dryRun: boolean): void {

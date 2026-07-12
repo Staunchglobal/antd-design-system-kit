@@ -10,7 +10,7 @@ import { confirm } from '../lib/confirm.js'
 import { pickComponents } from '../lib/prompt-components.js'
 import { navGroupsFor, demoFilesFor } from '../lib/selection.js'
 import { writeSelectionConfig, priorSelectionFor } from '../lib/selection-state.js'
-import { ALWAYS_NEXT_FILES } from '../lib/managed-files.js'
+import { ALWAYS_NEXT_FILES, ALWAYS_SHARED_FILES } from '../lib/managed-files.js'
 import { generateDesignSystemContent, generateDesignSystemPageShell, generateNavTs } from '../lib/codegen.js'
 
 export type InitOptions = {
@@ -91,9 +91,10 @@ export async function runNextInit(project: ProjectInfo, pm: PackageManager, opti
 
   const nextFixed = copySelectedFiles('template-antd-next', destRoot, ALWAYS_NEXT_FILES, dryRun)
   const nextSections = copySelectedFiles('template-antd-next', destRoot, sectionFiles, dryRun)
+  const sharedFixed = copySelectedFiles('template-antd-shared', destRoot, ALWAYS_SHARED_FILES, dryRun)
   const themeConfig = copySelectedFiles('template-antd-shared', destRoot, ['lib/theme/theme-config.ts'], dryRun)
 
-  const results = [...nextFixed, ...nextSections, ...themeConfig]
+  const results = [...nextFixed, ...nextSections, ...sharedFixed, ...themeConfig]
   for (const r of results) {
     if (r.status === 'written') log[dryRun ? 'info' : 'success'](dryRun ? `Would copy ${rel(r.relPath)}` : rel(r.relPath))
     else if (r.status === 'skipped') log.skip(`${rel(r.relPath)} (already exists — left untouched)`)
@@ -160,6 +161,6 @@ export async function runNextInit(project: ProjectInfo, pm: PackageManager, opti
   // ---- Done ------------------------------------------------------------------------
   log.title('Done')
   log.success('Ant Design kit installed.')
-  log.info(`Run your dev server, then visit ${pc.bold('/design-system')}.`)
+  log.info(`Run your dev server, then visit ${pc.bold('/design-system')} and ${pc.bold('/theme-editor')}.`)
   log.info(`Run \`${pc.bold('antd-design-kit init')}\` again any time to add more components.`)
 }

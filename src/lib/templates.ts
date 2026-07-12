@@ -34,3 +34,11 @@ export function readTemplateFile(root: TemplateRoot, relPath: string): string | 
   if (!fs.existsSync(full)) return null
   return fs.readFileSync(full, 'utf8')
 }
+
+/** For the rare file that lives at the template root itself, not under its src/ subfolder
+ * (e.g. template-antd-vite/vite-plugin-design-kit.ts). */
+export function readTemplateRootFile(root: TemplateRoot, relPath: string): string | null {
+  const full = path.join(REPO_ROOT, root, relPath)
+  if (!fs.existsSync(full)) return null
+  return fs.readFileSync(full, 'utf8')
+}

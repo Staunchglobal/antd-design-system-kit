@@ -7,11 +7,12 @@ export type ViteConfigPatchResult =
   | { action: 'needs-manual'; reason: string }
 
 /**
- * Adds the `"@/*" -> "./src/*"` resolve alias to vite.config.ts's `defineConfig({ ... })`
- * call — tsconfig's `paths` only affects the type-checker/editor, Vite's own bundler needs
- * this separately to actually resolve `@/...` imports at runtime.
+ * Adds the `"@/*" -> "./src/*"` resolve alias AND the `designKit()` dev-middleware plugin
+ * (the theme editor's Save endpoint) to vite.config.ts's `defineConfig({ ... })` call —
+ * tsconfig's `paths` only affects the type-checker/editor, Vite's own bundler needs the alias
+ * separately to actually resolve `@/...` imports at runtime.
  *
- * Uses ts-morph to locate the real defineConfig call and its `resolve.alias` object by AST
+ * Uses ts-morph to locate the real defineConfig call and its `resolve.alias`/`plugins` by AST
  * structure (not a regex), so a multi-line config or one with existing plugins/resolve still
  * works; only bails to a manual snippet for shapes it can't safely reason about.
  */
@@ -29,6 +30,10 @@ export function patchViteConfig(filePath: string): ViteConfigPatchResult {
 
   const importDecls = sourceFile.getImportDeclarations()
   const alreadyImported = (specifier: string) => importDecls.some((d) => d.getModuleSpecifierValue() === specifier)
+
+  if (alreadyImported('./vite-plugin-design-kit.ts') || alreadyImported('./vite-plugin-design-kit')) {
+    return { action: 'already-present' }
+  }
 
   const defineConfigCall = sourceFile
     .getDescendantsOfKind(SyntaxKind.CallExpression)
@@ -48,6 +53,23 @@ export function patchViteConfig(filePath: string): ViteConfigPatchResult {
     }
   }
   const configObject = arg as ObjectLiteralExpression
+
+  const pluginsProp = configObject.getProperty('plugins')
+  const pluginsInitializer = pluginsProp?.asKind(SyntaxKind.PropertyAssignment)?.getInitializer()
+  if (!pluginsProp || !pluginsInitializer || pluginsInitializer.getKind() !== SyntaxKind.ArrayLiteralExpression) {
+    return {
+      action: 'needs-manual',
+      reason: pluginsProp
+        ? '`plugins` is not a plain array literal — merge the designKit() plugin in by hand.'
+        : 'Could not find a `plugins` array — merge the designKit() plugin in by hand.',
+    }
+  }
+  const pluginsArray = pluginsInitializer.asKindOrThrow(SyntaxKind.ArrayLiteralExpression)
+  const hasPluginNamed = (name: string) =>
+    pluginsArray
+      .getElements()
+      .some((e) => e.getKind() === SyntaxKind.CallExpression && e.asKindOrThrow(SyntaxKind.CallExpression).getExpression().getText() === name)
+  if (!hasPluginNamed('designKit')) pluginsArray.addElement('designKit()')
 
   const resolveProp = configObject.getProperty('resolve')
   if (resolveProp) {
@@ -86,15 +108,16 @@ export function patchViteConfig(filePath: string): ViteConfigPatchResult {
     })
   }
 
+  const missingImports: string[] = []
+  if (!alreadyImported('node:url')) missingImports.push(`import { fileURLToPath } from 'node:url'`)
+  missingImports.push(`import { designKit } from './vite-plugin-design-kit.ts'`)
+
   let src = sourceFile.getFullText()
-  if (!alreadyImported('node:url')) {
-    const importLine = `import { fileURLToPath } from 'node:url'`
-    if (importDecls.length) {
-      const insertAt = importDecls[importDecls.length - 1].getEnd()
-      src = src.slice(0, insertAt) + `\n${importLine}` + src.slice(insertAt)
-    } else {
-      src = `${importLine}\n` + src
-    }
+  if (importDecls.length) {
+    const insertAt = importDecls[importDecls.length - 1].getEnd()
+    src = src.slice(0, insertAt) + `\n${missingImports.join('\n')}` + src.slice(insertAt)
+  } else {
+    src = `${missingImports.join('\n')}\n` + src
   }
 
   fs.writeFileSync(filePath, src)
@@ -104,9 +127,10 @@ export function patchViteConfig(filePath: string): ViteConfigPatchResult {
 export const VITE_CONFIG_MANUAL_SNIPPET = `import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { fileURLToPath } from 'node:url'
+import { designKit } from './vite-plugin-design-kit.ts'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), designKit()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

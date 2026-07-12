@@ -39,6 +39,7 @@
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "build:registry": "node scripts/build-registry.mjs",
+    "build:token-schema": "node scripts/extract-token-schema.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "smoke": "node scripts/smoke-test.mjs",
@@ -56,6 +57,7 @@
     "@changesets/cli": "^2.31.0",
     "@types/node": "^26.1.1",
     "@types/prompts": "^2.4.9",
+    "antd": "^6.5.0",
     "tsup": "^8.5.1",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"

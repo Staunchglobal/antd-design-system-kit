@@ -3,7 +3,7 @@ import pc from 'picocolors'
 import { log } from '../lib/log.js'
 import type { ProjectInfo, PackageManager } from '../lib/detect.js'
 import { CORE_RUNTIME_DEPENDENCIES, missingDeps, runInstall } from '../lib/deps.js'
-import { copySelectedFiles, writeGeneratedFile } from '../lib/copy.js'
+import { copySelectedFiles, copyTemplateRootFile, writeGeneratedFile } from '../lib/copy.js'
 import { patchTsconfig } from '../lib/patch-tsconfig.js'
 import { patchMainEntry } from '../lib/patch-main-entry.js'
 import { patchViteConfig, VITE_CONFIG_MANUAL_SNIPPET } from '../lib/patch-vite-config.js'
@@ -11,7 +11,7 @@ import { confirm } from '../lib/confirm.js'
 import { pickComponents } from '../lib/prompt-components.js'
 import { navGroupsFor, demoFilesFor } from '../lib/selection.js'
 import { writeSelectionConfig, priorSelectionFor } from '../lib/selection-state.js'
-import { ALWAYS_VITE_FILES } from '../lib/managed-files.js'
+import { ALWAYS_SHARED_FILES, ALWAYS_VITE_FILES } from '../lib/managed-files.js'
 import { generateDesignSystemPage, generateNavTs } from '../lib/codegen.js'
 import type { InitOptions } from './init-next.js'
 
@@ -74,14 +74,19 @@ export async function runViteInit(project: ProjectInfo, pm: PackageManager, opti
 
   const viteFixed = copySelectedFiles('template-antd-vite', destRoot, ALWAYS_VITE_FILES, dryRun)
   const viteSections = copySelectedFiles('template-antd-vite', destRoot, sectionFiles, dryRun)
+  const sharedFixed = copySelectedFiles('template-antd-shared', destRoot, ALWAYS_SHARED_FILES, dryRun)
   const themeConfig = copySelectedFiles('template-antd-shared', destRoot, ['lib/theme/theme-config.ts'], dryRun)
+  const pluginFile = copyTemplateRootFile('template-antd-vite', root, 'vite-plugin-design-kit.ts', dryRun)
 
-  const results = [...viteFixed, ...viteSections, ...themeConfig]
+  const results = [...viteFixed, ...viteSections, ...sharedFixed, ...themeConfig]
   for (const r of results) {
     if (r.status === 'written') log[dryRun ? 'info' : 'success'](dryRun ? `Would copy src/${r.relPath}` : `src/${r.relPath}`)
     else if (r.status === 'skipped') log.skip(`src/${r.relPath} (already exists — left untouched)`)
     else log.warn(`Missing template file: ${r.relPath}`)
   }
+  if (pluginFile.status === 'written') log[dryRun ? 'info' : 'success'](dryRun ? `Would copy ${pluginFile.relPath}` : pluginFile.relPath)
+  else if (pluginFile.status === 'skipped') log.skip(`${pluginFile.relPath} (already exists — left untouched)`)
+  else log.warn(`Missing template file: ${pluginFile.relPath}`)
 
   writeGeneratedFile(destRoot, 'design-system/_lib/nav.ts', generateNavTs(navGroups), dryRun)
   log.success(`${dryRun ? 'Would generate' : 'Generated'} src/design-system/_lib/nav.ts`)
@@ -129,26 +134,29 @@ export async function runViteInit(project: ProjectInfo, pm: PackageManager, opti
 
   if (project.viteConfigPath) {
     const viteConfigResult = patchViteConfig(project.viteConfigPath)
-    if (viteConfigResult.action === 'patched') log.success('Added the "@" resolve alias to vite.config.ts')
-    else if (viteConfigResult.action === 'already-present') log.skip('vite.config.ts already has the "@" alias')
+    if (viteConfigResult.action === 'patched')
+      log.success('Added the "@" resolve alias + designKit() theme-save plugin to vite.config.ts')
+    else if (viteConfigResult.action === 'already-present') log.skip('vite.config.ts already wired up')
     else {
       log.warn(`Couldn't auto-wire vite.config.ts (${viteConfigResult.reason})`)
       log.info(`Merge this in by hand:\n${VITE_CONFIG_MANUAL_SNIPPET}`)
     }
   } else {
-    log.warn('Could not find vite.config.{ts,js,mts} — add the "@" resolve alias by hand.')
+    log.warn('Could not find vite.config.{ts,js,mts} — add the "@" resolve alias + designKit() plugin by hand.')
     log.info(`Reference:\n${VITE_CONFIG_MANUAL_SNIPPET}`)
   }
 
   writeSelectionConfig(root, 'vite', [...selected])
 
   // ---- Done ------------------------------------------------------------------------
-  log.title('Manual step: mount the page')
+  log.title('Manual step: mount the pages')
   log.info(
-    'Vite has no built-in router, so wire this up yourself — e.g. with react-router-dom:\n' +
+    'Vite has no built-in router, so wire these up yourself — e.g. with react-router-dom:\n' +
       `  import DesignSystemPage from '@/design-system/DesignSystemPage'\n` +
+      `  import ThemeEditorPage from '@/theme-editor/ThemeEditorPage'\n` +
       '  …\n' +
-      '  <Route path="/design-system" element={<DesignSystemPage />} />'
+      '  <Route path="/design-system" element={<DesignSystemPage />} />\n' +
+      '  <Route path="/theme-editor" element={<ThemeEditorPage />} />'
   )
 
   log.title('Done')
