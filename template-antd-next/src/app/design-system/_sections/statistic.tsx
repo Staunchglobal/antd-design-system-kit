@@ -24,7 +24,7 @@ export default function StatisticDemo() {
           title="Growth"
           value={11.28}
           precision={2}
-          valueStyle={{ color: '#3f8600' }}
+          styles={{ content: { color: '#3f8600' } }}
           prefix={<ArrowUpOutlined />}
           suffix="%"
         />
@@ -32,14 +32,14 @@ export default function StatisticDemo() {
           title="Churn"
           value={9.3}
           precision={2}
-          valueStyle={{ color: '#cf1322' }}
+          styles={{ content: { color: '#cf1322' } }}
           prefix={<ArrowDownOutlined />}
           suffix="%"
         />
       </Example>
 
       <Example title="Countdown" contentStyle={{ display: 'flex', gap: 32 }}>
-        <Statistic.Countdown title="Offer ends in" value={deadline} format="D [days] H[h] m[m] s[s]" />
+        <Statistic.Timer type="countdown" title="Offer ends in" value={deadline} format="D [days] H[h] m[m] s[s]" />
       </Example>
 
       <Example title="In cards" contentStyle={{ display: 'flex', gap: 16 }}>

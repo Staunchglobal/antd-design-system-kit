@@ -75,16 +75,19 @@ export default function DropdownDemo() {
       </Example>
 
       <Example title="Button with dropdown">
-        <Dropdown.Button
-          menu={{
-            items: [
-              { key: '1', label: 'Second action' },
-              { key: '2', label: 'Third action' },
-            ],
-          }}
-        >
-          Primary action
-        </Dropdown.Button>
+        <Space.Compact>
+          <Button type="primary">Primary action</Button>
+          <Dropdown
+            menu={{
+              items: [
+                { key: '1', label: 'Second action' },
+                { key: '2', label: 'Third action' },
+              ],
+            }}
+          >
+            <Button type="primary" icon={<DownOutlined />} />
+          </Dropdown>
+        </Space.Compact>
       </Example>
     </ComponentSection>
   )

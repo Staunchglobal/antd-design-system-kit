@@ -53,7 +53,7 @@ export default function DrawerDemo() {
           title="Create a new customer"
           open={formOpen}
           onClose={() => setFormOpen(false)}
-          width={360}
+          size={360}
           footer={
             <Space style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <Button onClick={() => setFormOpen(false)}>Cancel</Button>

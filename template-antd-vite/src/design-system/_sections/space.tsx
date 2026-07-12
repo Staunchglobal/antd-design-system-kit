@@ -30,7 +30,7 @@ export default function SpaceDemo() {
       </Example>
 
       <Example title="Vertical">
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <Card size="small">Card 1</Card>
           <Card size="small">Card 2</Card>
           <Card size="small">Card 3</Card>
@@ -38,7 +38,7 @@ export default function SpaceDemo() {
       </Example>
 
       <Example title="Split">
-        <Space split={<Divider type="vertical" />}>
+        <Space separator={<Divider orientation="vertical" />}>
           <Button type="link" style={{ padding: 0 }}>
             Link 1
           </Button>

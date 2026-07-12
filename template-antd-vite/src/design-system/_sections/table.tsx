@@ -54,7 +54,7 @@ export default function TableDemo() {
       </Example>
 
       <Example title="Compact size">
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <Table<Person> size="small" columns={columns} dataSource={dataSource} pagination={false} />
         </Space>
       </Example>

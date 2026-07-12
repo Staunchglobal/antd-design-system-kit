@@ -22,7 +22,7 @@ export default function SpinDemo() {
       <Example title="Sizes">
         <Space size="large" align="center">
           <Spin size="small" />
-          <Spin size="default" />
+          <Spin size="medium" />
           <Spin size="large" />
         </Space>
       </Example>
@@ -30,7 +30,7 @@ export default function SpinDemo() {
       <Example title="With description">
         <Spin description="Loading..." spinning>
           <Alert
-            message="Alert message title"
+            title="Alert message title"
             description="Further details about the context of this alert."
             type="info"
           />
@@ -38,10 +38,10 @@ export default function SpinDemo() {
       </Example>
 
       <Example title="Toggle spinning content">
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <Button onClick={toggleSpinning}>Refresh content</Button>
           <Spin spinning={spinning}>
-            <Alert message="Content loaded from the server appears here." type="success" />
+            <Alert title="Content loaded from the server appears here." type="success" />
           </Spin>
         </Space>
       </Example>

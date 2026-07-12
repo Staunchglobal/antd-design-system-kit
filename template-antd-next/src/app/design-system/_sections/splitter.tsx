@@ -33,7 +33,7 @@ export default function SplitterDemo() {
       </Example>
 
       <Example title="Vertical" contentStyle={{ display: 'block', height: 200, padding: 0 }}>
-        <Splitter layout="vertical" style={{ height: 200 }}>
+        <Splitter orientation="vertical" style={{ height: 200 }}>
           <Splitter.Panel defaultSize="40%">
             <div style={panelContent}>Top panel</div>
           </Splitter.Panel>

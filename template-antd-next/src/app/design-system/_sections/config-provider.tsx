@@ -36,7 +36,7 @@ export default function ConfigProviderDemo() {
 
       <Example title="Nested override">
         <ConfigProvider theme={{ token: { colorPrimary: '#13c2c2' } }}>
-          <Space direction="vertical">
+          <Space orientation="vertical">
             <Button type="primary">Teal (outer override)</Button>
             <ConfigProvider theme={{ token: { colorPrimary: '#fa8c16' } }}>
               <Button type="primary">Orange (nested override wins)</Button>

@@ -21,13 +21,21 @@ export default function AnchorDemo() {
       </Example>
 
       <Example title="With sub-items" contentStyle={{ display: 'block' }}>
-        <Anchor getContainer={() => window}>
-          <Anchor.Link href="#anchor-demo-components" title="Components">
-            <Anchor.Link href="#anchor-demo-button" title="Button" />
-            <Anchor.Link href="#anchor-demo-card" title="Card" />
-          </Anchor.Link>
-          <Anchor.Link href="#anchor-demo-changelog" title="Changelog" />
-        </Anchor>
+        <Anchor
+          getContainer={() => window}
+          items={[
+            {
+              key: 'components',
+              href: '#anchor-demo-components',
+              title: 'Components',
+              children: [
+                { key: 'button', href: '#anchor-demo-button', title: 'Button' },
+                { key: 'card', href: '#anchor-demo-card', title: 'Card' },
+              ],
+            },
+            { key: 'changelog', href: '#anchor-demo-changelog', title: 'Changelog' },
+          ]}
+        />
       </Example>
 
       <Example title="Horizontal" contentStyle={{ display: 'block' }}>

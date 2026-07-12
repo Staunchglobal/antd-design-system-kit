@@ -32,7 +32,7 @@ export default function ProgressDemo() {
       </Example>
 
       <Example title="Sizes and custom strokes">
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <Progress percent={50} size="small" />
           <Progress percent={50} strokeColor={{ from: '#108ee9', to: '#87d068' }} />
         </Space>

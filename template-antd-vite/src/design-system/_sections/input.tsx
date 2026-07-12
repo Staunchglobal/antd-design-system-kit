@@ -1,4 +1,4 @@
-import { Input } from 'antd'
+import { Input, Space } from 'antd'
 import { MailOutlined, SearchOutlined, UserOutlined } from '@ant-design/icons'
 
 import { ComponentSection, Example } from '@/design-system/_lib/showcase'
@@ -28,7 +28,11 @@ export default function InputDemo() {
       <Example title="With suffix / addons">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: 320 }}>
           <Input suffix={<SearchOutlined />} placeholder="Suffix icon" />
-          <Input addonBefore="https://" addonAfter=".com" placeholder="mysite" />
+          <Space.Compact style={{ width: '100%' }}>
+            <Input style={{ width: 90, flex: 'none' }} defaultValue="https://" disabled />
+            <Input placeholder="mysite" />
+            <Input style={{ width: 70, flex: 'none' }} defaultValue=".com" disabled />
+          </Space.Compact>
         </div>
       </Example>
 

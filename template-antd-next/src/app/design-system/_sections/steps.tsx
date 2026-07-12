@@ -20,9 +20,9 @@ export default function StepsDemo() {
         <Steps
           current={1}
           items={[
-            { title: 'Finished', description: 'This step has been completed.' },
-            { title: 'In Progress', description: 'This step is currently active.' },
-            { title: 'Waiting', description: 'This step has not started yet.' },
+            { title: 'Finished', content: 'This step has been completed.' },
+            { title: 'In Progress', content: 'This step is currently active.' },
+            { title: 'Waiting', content: 'This step has not started yet.' },
           ]}
         />
       </Example>
@@ -32,9 +32,9 @@ export default function StepsDemo() {
           current={1}
           status="error"
           items={[
-            { title: 'Login', description: 'Completed.' },
-            { title: 'Verification', description: 'Verification failed.' },
-            { title: 'Pay', description: 'Waiting.' },
+            { title: 'Login', content: 'Completed.' },
+            { title: 'Verification', content: 'Verification failed.' },
+            { title: 'Pay', content: 'Waiting.' },
           ]}
         />
       </Example>
@@ -51,13 +51,13 @@ export default function StepsDemo() {
 
       <Example title="Small size, vertical" contentStyle={{ display: 'block' }}>
         <Steps
-          direction="vertical"
+          orientation="vertical"
           size="small"
           current={1}
           items={[
-            { title: 'Order placed', description: 'Your order has been placed.' },
-            { title: 'Preparing shipment', description: 'Your items are being packed.' },
-            { title: 'Delivered', description: 'Awaiting delivery.' },
+            { title: 'Order placed', content: 'Your order has been placed.' },
+            { title: 'Preparing shipment', content: 'Your items are being packed.' },
+            { title: 'Delivered', content: 'Awaiting delivery.' },
           ]}
         />
       </Example>

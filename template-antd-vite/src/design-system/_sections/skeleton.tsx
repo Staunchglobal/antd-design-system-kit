@@ -17,14 +17,14 @@ export default function SkeletonDemo() {
       </Example>
 
       <Example title="Avatar and paragraph">
-        <Space direction="vertical" style={{ width: '100%' }} size="large">
+        <Space orientation="vertical" style={{ width: '100%' }} size="large">
           <Skeleton avatar paragraph={{ rows: 4 }} active />
           <Skeleton avatar={{ shape: 'square' }} paragraph={{ rows: 2 }} title={false} active />
         </Space>
       </Example>
 
       <Example title="Toggle loading state">
-        <Space direction="vertical" style={{ width: '100%' }} size="middle">
+        <Space orientation="vertical" style={{ width: '100%' }} size="middle">
           <Switch checked={loading} onChange={setLoading} checkedChildren="Loading" unCheckedChildren="Loaded" />
           <Skeleton loading={loading} active avatar>
             <Skeleton.Avatar active size="large" style={{ marginRight: 12 }} />

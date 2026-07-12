@@ -1,6 +1,6 @@
 'use client'
 
-import { InputNumber, Space } from 'antd'
+import { Input, InputNumber, Space } from 'antd'
 
 import { ComponentSection, Example } from '@/app/design-system/_lib/showcase'
 
@@ -23,9 +23,16 @@ export default function InputNumberDemo() {
       </Example>
 
       <Example title="With addons">
-        <Space direction="vertical">
-          <InputNumber addonBefore="$" addonAfter="USD" defaultValue={1000} style={{ width: 200 }} />
-          <InputNumber addonAfter="%" defaultValue={20} min={0} max={100} style={{ width: 160 }} />
+        <Space orientation="vertical">
+          <Space.Compact>
+            <Input style={{ width: 40, flex: 'none', textAlign: 'center' }} defaultValue="$" disabled />
+            <InputNumber defaultValue={1000} style={{ width: 120 }} />
+            <Input style={{ width: 60, flex: 'none', textAlign: 'center' }} defaultValue="USD" disabled />
+          </Space.Compact>
+          <Space.Compact>
+            <InputNumber defaultValue={20} min={0} max={100} style={{ width: 120 }} />
+            <Input style={{ width: 40, flex: 'none', textAlign: 'center' }} defaultValue="%" disabled />
+          </Space.Compact>
         </Space>
       </Example>
 

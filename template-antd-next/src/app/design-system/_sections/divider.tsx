@@ -34,9 +34,9 @@ export default function DividerDemo() {
       <Example title="Vertical">
         <div>
           <Text>Text</Text>
-          <Divider type="vertical" />
+          <Divider orientation="vertical" />
           <Text>Link</Text>
-          <Divider type="vertical" />
+          <Divider orientation="vertical" />
           <Text>Link</Text>
         </div>
       </Example>

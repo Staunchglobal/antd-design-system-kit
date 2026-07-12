@@ -67,7 +67,7 @@ export default function TreeSelectDemo() {
       </Example>
 
       <Example title="Sizes and states">
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <TreeSelect style={{ width: 260 }} size="large" treeData={treeData} placeholder="Large" />
           <TreeSelect style={{ width: 260 }} size="small" treeData={treeData} placeholder="Small" />
           <TreeSelect style={{ width: 260 }} treeData={treeData} placeholder="Disabled" disabled />

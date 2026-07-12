@@ -8,17 +8,17 @@ export default function AlertDemo() {
   return (
     <ComponentSection id="alert" title="Alert" description="Displays important, contextual feedback messages.">
       <Example title="Types" contentStyle={{ display: 'block' }}>
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Alert message="Success Tips" type="success" showIcon />
-          <Alert message="Informational Notes" type="info" showIcon />
-          <Alert message="Warning" type="warning" showIcon />
-          <Alert message="Error" type="error" showIcon />
+        <Space orientation="vertical" style={{ width: '100%' }}>
+          <Alert title="Success Tips" type="success" showIcon />
+          <Alert title="Informational Notes" type="info" showIcon />
+          <Alert title="Warning" type="warning" showIcon />
+          <Alert title="Error" type="error" showIcon />
         </Space>
       </Example>
 
       <Example title="With description" contentStyle={{ display: 'block' }}>
         <Alert
-          message="Update available"
+          title="Update available"
           description="A new version of the design system is available. Refresh to load the latest tokens."
           type="info"
           showIcon
@@ -27,7 +27,7 @@ export default function AlertDemo() {
 
       <Example title="Closable" contentStyle={{ display: 'block' }}>
         <Alert
-          message="Closable alert"
+          title="Closable alert"
           description="This alert can be dismissed by the user."
           type="warning"
           showIcon
@@ -37,7 +37,7 @@ export default function AlertDemo() {
 
       <Example title="With action" contentStyle={{ display: 'block' }}>
         <Alert
-          message="Deployment in progress"
+          title="Deployment in progress"
           description="Your changes are being published to production."
           type="info"
           showIcon

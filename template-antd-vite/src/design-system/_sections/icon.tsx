@@ -23,49 +23,49 @@ export default function IconDemo() {
     >
       <Example title="Common icons">
         <Space size="large" wrap>
-          <Space direction="vertical" align="center" size={4}>
+          <Space orientation="vertical" align="center" size={4}>
             <HomeOutlined style={{ fontSize: 20 }} />
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               HomeOutlined
             </Typography.Text>
           </Space>
-          <Space direction="vertical" align="center" size={4}>
+          <Space orientation="vertical" align="center" size={4}>
             <UserOutlined style={{ fontSize: 20 }} />
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               UserOutlined
             </Typography.Text>
           </Space>
-          <Space direction="vertical" align="center" size={4}>
+          <Space orientation="vertical" align="center" size={4}>
             <SettingFilled style={{ fontSize: 20 }} />
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               SettingFilled
             </Typography.Text>
           </Space>
-          <Space direction="vertical" align="center" size={4}>
+          <Space orientation="vertical" align="center" size={4}>
             <HeartTwoTone style={{ fontSize: 20 }} twoToneColor="#eb2f96" />
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               HeartTwoTone
             </Typography.Text>
           </Space>
-          <Space direction="vertical" align="center" size={4}>
+          <Space orientation="vertical" align="center" size={4}>
             <StarFilled style={{ fontSize: 20, color: '#fadb14' }} />
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               StarFilled
             </Typography.Text>
           </Space>
-          <Space direction="vertical" align="center" size={4}>
+          <Space orientation="vertical" align="center" size={4}>
             <CheckCircleTwoTone style={{ fontSize: 20 }} twoToneColor="#52c41a" />
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               CheckCircleTwoTone
             </Typography.Text>
           </Space>
-          <Space direction="vertical" align="center" size={4}>
+          <Space orientation="vertical" align="center" size={4}>
             <BellOutlined style={{ fontSize: 20 }} />
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               BellOutlined
             </Typography.Text>
           </Space>
-          <Space direction="vertical" align="center" size={4}>
+          <Space orientation="vertical" align="center" size={4}>
             <SmileOutlined style={{ fontSize: 20 }} />
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
               SmileOutlined

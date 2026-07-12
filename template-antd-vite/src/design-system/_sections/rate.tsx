@@ -23,14 +23,14 @@ export default function RateDemo() {
       </Example>
 
       <Example title="Custom character" description="Any node can replace the default star.">
-        <Space direction="vertical" size={16}>
+        <Space orientation="vertical" size={16}>
           <Rate character={<HeartFilled />} defaultValue={2} style={{ color: '#eb2f96' }} />
           <Rate character="A" defaultValue={3} allowHalf={false} />
         </Space>
       </Example>
 
       <Example title="States">
-        <Space direction="vertical" size={16}>
+        <Space orientation="vertical" size={16}>
           <Rate disabled defaultValue={2} />
           <Rate count={10} defaultValue={6} />
         </Space>
