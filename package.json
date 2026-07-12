@@ -40,6 +40,7 @@
     "typecheck": "tsc --noEmit",
     "build:registry": "node scripts/build-registry.mjs",
     "build:token-schema": "node scripts/extract-token-schema.mjs",
+    "build:icon-reexports": "node scripts/generate-icon-reexports.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "smoke": "node scripts/smoke-test.mjs",

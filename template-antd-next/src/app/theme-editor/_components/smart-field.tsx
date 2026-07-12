@@ -2,6 +2,18 @@
 
 import { ColorPicker, Input, InputNumber, Select, Switch, Typography } from 'antd'
 import type { ThemeTokenField } from '@/lib/theme/types'
+import { googleFonts } from '@/lib/theme/google-fonts'
+
+const FALLBACK_STACK: Record<string, string> = {
+  fontFamily: 'sans-serif',
+  fontFamilyCode: 'monospace',
+}
+
+/** Pulls the first font name out of a CSS `font-family` value, e.g. `"Inter", sans-serif` -> `Inter`. */
+function extractPrimaryFamily(value: string): string | null {
+  const first = value.split(',')[0]?.trim().replace(/^['"]|['"]$/g, '')
+  return first || null
+}
 
 export function SmartField({
   field,
@@ -64,7 +76,31 @@ function renderControl(
           options={(field.enumOptions ?? []).map((o) => ({ value: o, label: o }))}
         />
       )
-    case 'font-family':
+    case 'font-family': {
+      const stringValue = typeof value === 'string' ? value : ''
+      const currentFamily = extractPrimaryFamily(stringValue)
+      const fallback = FALLBACK_STACK[field.name] ?? 'sans-serif'
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 480 }}>
+          <Select
+            showSearch
+            allowClear
+            placeholder="Search Google Fonts…"
+            value={currentFamily && googleFonts.some((f) => f.family === currentFamily) ? currentFamily : undefined}
+            onChange={(family) => onChange(family ? `'${family}', ${fallback}` : '')}
+            optionFilterProp="label"
+            options={googleFonts.map((f) => ({ value: f.family, label: f.family }))}
+          />
+          <Input.TextArea
+            value={stringValue}
+            onChange={(e) => onChange(e.target.value)}
+            autoSize={{ minRows: 1, maxRows: 3 }}
+            style={{ fontFamily: 'monospace', fontSize: 12 }}
+            placeholder="Full CSS font-family value (auto-filled when you pick a font above)"
+          />
+        </div>
+      )
+    }
     case 'easing-string':
     default:
       return (

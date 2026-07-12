@@ -1,7 +1,24 @@
 import { GLOBAL_TOKEN_SCHEMA } from './token-schema.generated'
 import type { TokenFieldValue } from './types'
+import { ICON_KEYS, type IconKey } from '../../components/icons/icon-map'
 
 const SCHEMA_BY_NAME = new Map(GLOBAL_TOKEN_SCHEMA.map((e) => [e.name, e]))
+
+/** Every real @ant-design/icons export follows this naming convention — a charset allowlist
+ * is enough here since, unlike token values, an icon name never gets embedded as free text;
+ * it's always written as a literal object value via JSON.stringify (icon-map-codegen.ts). */
+const SAFE_ICON_NAME_RE = /^[A-Z][A-Za-z0-9]*(Outlined|Filled|TwoTone)$/
+const KNOWN_ICON_KEYS = new Set<string>(ICON_KEYS)
+
+export function sanitizeIconMap(input: unknown): Record<IconKey, string> {
+  const out = {} as Record<IconKey, string>
+  if (typeof input !== 'object' || input === null) return out
+  for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
+    if (!KNOWN_ICON_KEYS.has(key)) continue // unknown icon key — silently dropped, not an error
+    if (typeof value === 'string' && SAFE_ICON_NAME_RE.test(value)) out[key as IconKey] = value
+  }
+  return out
+}
 
 /**
  * Save writes values via `JSON.stringify` (see theme-config-codegen.ts), not raw string

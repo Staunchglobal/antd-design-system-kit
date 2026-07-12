@@ -8,3 +8,7 @@
 - Phase 2: a live `/theme-editor` for global seed tokens, generated from antd's own shipped
   `SeedToken` interface (`scripts/extract-token-schema.mjs`), with a dev-only save endpoint
   that regenerates `src/lib/theme/theme-config.ts`.
+- Phase 3: a searchable Google Fonts picker (patches `<link>` tags into layout.tsx/index.html
+  on save) and a scoped app-level icon-remapping system, generated from
+  `scripts/generate-icon-reexports.mjs` to work around a Turbopack SSR crash on namespace-
+  importing `@ant-design/icons` directly.

@@ -1,16 +1,21 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import type { Plugin, ViteDevServer } from 'vite'
+import { googleFonts } from './src/lib/theme/google-fonts.js'
+import { GLOBAL_TOKEN_SCHEMA } from './src/lib/theme/token-schema.generated.js'
+import { buildGoogleFontsHref, resolveWeights, type GoogleFontRequest } from './src/lib/theme/google-fonts-link.js'
+import { defaultIconMap, ICON_KEYS } from './src/components/icons/icon-map.js'
+import { serializeIconMap } from './src/components/icons/icon-map-codegen.js'
 
 /**
  * Duplicates (rather than imports) the small pieces of `src/lib/theme/{validation,
  * theme-config-codegen}.ts` this plugin needs — it's loaded directly by vite.config.ts under
  * Vite's `tsconfig.node.json` (real ECMAScript `node16`/`nodenext` module resolution, which
- * requires `.js`-suffixed relative specifiers), while the shared `src/lib/theme/*` files are
- * written for the app's own bundler-mode resolution (no extension) so they work unmodified
- * inside the Next app too. Rather than fight two incompatible resolution modes for one set of
- * files, this plugin stays fully self-contained — same precedent as the sibling shadcn kit's
- * own vite-plugin-design-kit.ts duplicating its validation regexes locally.
+ * requires `.js`-suffixed relative specifiers), while those two files internally import
+ * sibling shared files (types.ts, token-schema.generated.ts) using the app's own bundler-mode
+ * resolution (no extension) — a chain that breaks under node16. The three imports above are
+ * safe to import directly instead: each is a leaf module with zero relative imports of its
+ * own, so there's no transitive chain to break either way.
  */
 type TokenFieldValue = string | number | boolean
 type TokenValueType = 'color-hex' | 'number' | 'font-family' | 'boolean' | 'easing-string' | 'enum'
@@ -119,6 +124,71 @@ export const themeConfig: ThemeConfig = {
 `
 }
 
+const FONT_TOKEN_NAMES = ['fontFamily', 'fontFamilyCode'] as const
+const FONT_MARKER_START = '<!-- THEME_GOOGLE_FONTS_START -->'
+const FONT_MARKER_END = '<!-- THEME_GOOGLE_FONTS_END -->'
+
+function extractPrimaryFamily(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const first = value.split(',')[0]?.trim().replace(/^['"]|['"]$/g, '')
+  return first || null
+}
+
+/** Google Fonts referenced by the CURRENT effective token values (overrides merged over
+ * schema defaults) — recomputed from scratch every save, so removing a font override also
+ * removes its <link> tags rather than leaving them stale. */
+function googleFontsInUse(token: Record<string, TokenFieldValue>): GoogleFontRequest[] {
+  const out: GoogleFontRequest[] = []
+  const seen = new Set<string>()
+  for (const name of FONT_TOKEN_NAMES) {
+    const schemaDefault = GLOBAL_TOKEN_SCHEMA.find((e) => e.name === name)?.defaultValue
+    const effective = name in token ? token[name] : schemaDefault
+    const family = extractPrimaryFamily(effective)
+    if (!family || seen.has(family)) continue
+    const entry = googleFonts.find((f) => f.family === family)
+    if (!entry) continue
+    seen.add(family)
+    out.push({ family, weights: resolveWeights(entry.weights) })
+  }
+  return out
+}
+
+function fontLinksBlock(fonts: GoogleFontRequest[]): string {
+  if (!fonts.length) return `${FONT_MARKER_START}${FONT_MARKER_END}`
+  const href = buildGoogleFontsHref(fonts)
+  return [
+    FONT_MARKER_START,
+    '<link rel="preconnect" href="https://fonts.googleapis.com" />',
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />',
+    `<link rel="stylesheet" href="${href}" />`,
+    FONT_MARKER_END,
+  ].join('\n    ')
+}
+
+/** Patches index.html between marker comments (or inserts them right before </head>). */
+function patchIndexHtmlFonts(root: string, fonts: GoogleFontRequest[]): void {
+  const indexPath = path.join(root, 'index.html')
+  if (!fs.existsSync(indexPath)) return
+  let src = fs.readFileSync(indexPath, 'utf8')
+  const block = fontLinksBlock(fonts)
+  const markerRe = /<!-- THEME_GOOGLE_FONTS_START -->[\s\S]*?<!-- THEME_GOOGLE_FONTS_END -->/
+  src = markerRe.test(src) ? src.replace(markerRe, block) : src.replace(/<\/head>/, `    ${block}\n  </head>`)
+  fs.writeFileSync(indexPath, src)
+}
+
+const SAFE_ICON_NAME_RE = /^[A-Z][A-Za-z0-9]*(Outlined|Filled|TwoTone)$/
+const KNOWN_ICON_KEYS = new Set<string>(ICON_KEYS)
+
+function sanitizeIconMap(input: unknown): Record<string, string> {
+  const out: Record<string, string> = {}
+  if (typeof input !== 'object' || input === null) return out
+  for (const [key, value] of Object.entries(input as Record<string, unknown>)) {
+    if (!KNOWN_ICON_KEYS.has(key)) continue
+    if (typeof value === 'string' && SAFE_ICON_NAME_RE.test(value)) out[key] = value
+  }
+  return out
+}
+
 function readBody(req: import('node:http').IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = []
@@ -151,10 +221,22 @@ export function designKit(): Plugin {
             typeof body === 'object' && body !== null && 'token' in body
               ? sanitizeTokenOverrides((body as { token: unknown }).token)
               : {}
+          const sanitizedIcons =
+            typeof body === 'object' && body !== null && 'iconMap' in body
+              ? sanitizeIconMap((body as { iconMap: unknown }).iconMap)
+              : {}
 
           const themeConfigPath = path.join(server.config.root, 'src/lib/theme/theme-config.ts')
           const existingSource = fs.existsSync(themeConfigPath) ? fs.readFileSync(themeConfigPath, 'utf8') : null
           fs.writeFileSync(themeConfigPath, serializeThemeConfig(existingSource, token))
+
+          patchIndexHtmlFonts(server.config.root, googleFontsInUse(token))
+
+          const finalIconMap = Object.fromEntries(
+            ICON_KEYS.map((key) => [key, sanitizedIcons[key] ?? defaultIconMap[key]])
+          )
+          const iconMapPath = path.join(server.config.root, 'src/components/icons/icon-map.ts')
+          fs.writeFileSync(iconMapPath, serializeIconMap(finalIconMap))
 
           res.setHeader('Content-Type', 'application/json')
           res.end(JSON.stringify({ ok: true, message: `Saved ${Object.keys(token).length} token override(s).` }))

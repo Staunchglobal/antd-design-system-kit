@@ -3,15 +3,17 @@
 import * as React from 'react'
 import { ConfigProvider, Divider } from 'antd'
 import type { ThemeManifest } from '@/lib/theme/types'
+import type { IconKey } from '@/components/icons/icon-map'
+import { IconMapProvider } from '@/components/icons/icon-context'
 import { ThemeEditorProvider, useThemeEditor } from '@/app/theme-editor/_lib/theme-editor-context'
 import { ThemeNav } from './theme-nav'
 import { VariableForm } from './variable-form'
+import { IconsForm } from './icons-form'
 import { LivePreview } from './live-preview'
 
 function ShellBody() {
-  const { manifest } = useThemeEditor()
+  const { manifest, values, iconMap } = useThemeEditor()
   const [activeGroupId, setActiveGroupId] = React.useState(manifest.groups[0]?.id ?? '')
-  const { values } = useThemeEditor()
 
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
@@ -20,22 +22,30 @@ function ShellBody() {
       </aside>
 
       <section style={{ width: 420, flexShrink: 0, borderRight: '1px solid rgba(5,5,5,0.06)', padding: 16, overflowY: 'auto' }}>
-        <VariableForm activeGroupId={activeGroupId} />
+        {activeGroupId === 'icons' ? <IconsForm /> : <VariableForm activeGroupId={activeGroupId} />}
       </section>
 
       <main style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: 16 }}>
         <Divider style={{ marginTop: 0 }}>Live preview</Divider>
         <ConfigProvider theme={{ token: values }}>
-          <LivePreview />
+          <IconMapProvider value={iconMap}>
+            <LivePreview />
+          </IconMapProvider>
         </ConfigProvider>
       </main>
     </div>
   )
 }
 
-export function ThemeEditorShell({ manifest }: { manifest: ThemeManifest }) {
+export function ThemeEditorShell({
+  manifest,
+  initialIconMap,
+}: {
+  manifest: ThemeManifest
+  initialIconMap: Record<IconKey, string>
+}) {
   return (
-    <ThemeEditorProvider manifest={manifest}>
+    <ThemeEditorProvider manifest={manifest} initialIconMap={initialIconMap}>
       <ShellBody />
     </ThemeEditorProvider>
   )

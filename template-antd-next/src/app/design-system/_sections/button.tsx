@@ -1,13 +1,10 @@
 'use client'
 
 import { Button, Space } from 'antd'
-import {
-  DownloadOutlined,
-  PlusOutlined,
-  SearchOutlined,
-} from '@ant-design/icons'
+import { SearchOutlined } from '@ant-design/icons'
 
 import { ComponentSection, Example } from '@/app/design-system/_lib/showcase'
+import { AppIcon } from '@/components/icons/icon'
 
 export default function ButtonDemo() {
   return (
@@ -40,10 +37,10 @@ export default function ButtonDemo() {
 
       <Example title="With icon">
         <Space wrap>
-          <Button type="primary" icon={<PlusOutlined />}>
+          <Button type="primary" icon={<AppIcon name="button.new" />}>
             New
           </Button>
-          <Button icon={<DownloadOutlined />}>Download</Button>
+          <Button icon={<AppIcon name="button.download" />}>Download</Button>
           <Button shape="circle" icon={<SearchOutlined />} />
         </Space>
       </Example>
