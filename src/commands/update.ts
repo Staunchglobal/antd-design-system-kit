@@ -3,7 +3,7 @@ import path from 'node:path'
 import pc from 'picocolors'
 import { log } from '../lib/log.js'
 import { detectProject } from '../lib/detect.js'
-import { readTemplateRootFile } from '../lib/templates.js'
+import { fetchTemplateRootText } from '../lib/remote.js'
 import { syncManagedFiles, writeGeneratedFile, type SyncResult } from '../lib/copy.js'
 import { readSelectionConfig, recordFileHashes, sha256 } from '../lib/selection-state.js'
 import { ALWAYS_SHARED_FILES, ALWAYS_NEXT_FILES, ALWAYS_VITE_FILES } from '../lib/managed-files.js'
@@ -78,9 +78,11 @@ export async function update(options: UpdateOptions) {
     const sectionFiles = demoFilesFor(navGroups).map((f) => `app/design-system/_sections/${f}`)
 
     log.title('Files')
-    const nextFixed = syncManagedFiles('template-antd-next', destRoot, ALWAYS_NEXT_FILES, config.fileHashes, sha256, options.force, dryRun)
-    const nextSections = syncManagedFiles('template-antd-next', destRoot, sectionFiles, config.fileHashes, sha256, options.force, dryRun)
-    const sharedFixed = syncManagedFiles('template-antd-shared', destRoot, ALWAYS_SHARED_FILES, config.fileHashes, sha256, options.force, dryRun)
+    const [nextFixed, nextSections, sharedFixed] = await Promise.all([
+      syncManagedFiles('template-antd-next', destRoot, ALWAYS_NEXT_FILES, config.fileHashes, sha256, options.force, dryRun),
+      syncManagedFiles('template-antd-next', destRoot, sectionFiles, config.fileHashes, sha256, options.force, dryRun),
+      syncManagedFiles('template-antd-shared', destRoot, ALWAYS_SHARED_FILES, config.fileHashes, sha256, options.force, dryRun),
+    ])
 
     const allResults = [...nextFixed, ...nextSections, ...sharedFixed]
     logSyncResults(allResults, rel, dryRun)
@@ -136,9 +138,11 @@ export async function update(options: UpdateOptions) {
   const sectionFiles = demoFilesFor(navGroups).map((f) => `design-system/_sections/${f}`)
 
   log.title('Files')
-  const viteFixed = syncManagedFiles('template-antd-vite', destRoot, ALWAYS_VITE_FILES, config.fileHashes, sha256, options.force, dryRun)
-  const viteSections = syncManagedFiles('template-antd-vite', destRoot, sectionFiles, config.fileHashes, sha256, options.force, dryRun)
-  const sharedFixed = syncManagedFiles('template-antd-shared', destRoot, ALWAYS_SHARED_FILES, config.fileHashes, sha256, options.force, dryRun)
+  const [viteFixed, viteSections, sharedFixed] = await Promise.all([
+    syncManagedFiles('template-antd-vite', destRoot, ALWAYS_VITE_FILES, config.fileHashes, sha256, options.force, dryRun),
+    syncManagedFiles('template-antd-vite', destRoot, sectionFiles, config.fileHashes, sha256, options.force, dryRun),
+    syncManagedFiles('template-antd-shared', destRoot, ALWAYS_SHARED_FILES, config.fileHashes, sha256, options.force, dryRun),
+  ])
 
   const allResults = [...viteFixed, ...viteSections, ...sharedFixed]
   logSyncResults(allResults, (p) => `src/${p}`, dryRun)
@@ -146,7 +150,7 @@ export async function update(options: UpdateOptions) {
   // vite-plugin-design-kit.ts lives at the project root, not under src/ — synced by hand
   // rather than through syncManagedFiles, which assumes a single destDir for all relPaths.
   const pluginRelPath = 'vite-plugin-design-kit.ts'
-  const pluginTemplateContent = readTemplateRootFile('template-antd-vite', pluginRelPath)
+  const pluginTemplateContent = await fetchTemplateRootText('template-antd-vite', pluginRelPath)
   const pluginDestPath = path.join(root, pluginRelPath)
   let pluginResult: SyncResult | null = null
   if (pluginTemplateContent === null) {

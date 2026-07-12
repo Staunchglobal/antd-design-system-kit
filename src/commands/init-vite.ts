@@ -72,11 +72,13 @@ export async function runViteInit(project: ProjectInfo, pm: PackageManager, opti
   const dryRun = !!options.dryRun
   const destRoot = path.join(root, 'src')
 
-  const viteFixed = copySelectedFiles('template-antd-vite', destRoot, ALWAYS_VITE_FILES, dryRun)
-  const viteSections = copySelectedFiles('template-antd-vite', destRoot, sectionFiles, dryRun)
-  const sharedFixed = copySelectedFiles('template-antd-shared', destRoot, ALWAYS_SHARED_FILES, dryRun)
-  const themeConfig = copySelectedFiles('template-antd-shared', destRoot, ['lib/theme/theme-config.ts'], dryRun)
-  const pluginFile = copyTemplateRootFile('template-antd-vite', root, 'vite-plugin-design-kit.ts', dryRun)
+  const [viteFixed, viteSections, sharedFixed, themeConfig, pluginFile] = await Promise.all([
+    copySelectedFiles('template-antd-vite', destRoot, ALWAYS_VITE_FILES, dryRun),
+    copySelectedFiles('template-antd-vite', destRoot, sectionFiles, dryRun),
+    copySelectedFiles('template-antd-shared', destRoot, ALWAYS_SHARED_FILES, dryRun),
+    copySelectedFiles('template-antd-shared', destRoot, ['lib/theme/theme-config.ts'], dryRun),
+    copyTemplateRootFile('template-antd-vite', root, 'vite-plugin-design-kit.ts', dryRun),
+  ])
 
   const results = [...viteFixed, ...viteSections, ...sharedFixed, ...themeConfig]
   for (const r of results) {

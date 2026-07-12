@@ -21,3 +21,6 @@
   overwritten unless `--force` is passed.
 - `antd-design-kit remove <slugs>`: drops components from `/design-system`, deleting their
   demo section and regenerating the nav/page.
+- Phase 8: CDN-based template distribution via jsdelivr, pinned to the exact commit SHA the
+  CLI was built from (`src/lib/remote.ts`); repo pushed to
+  `github.com/Staunchglobal/antd-design-system-kit` (public).

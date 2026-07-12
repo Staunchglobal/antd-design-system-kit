@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { readTemplateFile, readTemplateRootFile, type TemplateRoot } from './templates.js'
+import { fetchTemplateRootText, fetchTemplateText, mapWithConcurrency, type TemplateRoot } from './remote.js'
 
 export type CopyResult = { relPath: string; status: 'written' | 'skipped' | 'missing'; content?: string }
 
@@ -8,45 +8,40 @@ export type CopyResult = { relPath: string; status: 'written' | 'skipped' | 'mis
  * Never overwrites a file that already exists — a file the user hand-edited (or that a
  * prior install already wrote) is always left alone and reported back, never clobbered.
  * `content` is included on 'written' results so callers can record a baseline hash for
- * `update`'s drift detection without a second read.
+ * `update`'s drift detection without a second read. Fetches concurrently (capped at 8
+ * in-flight) since each file is now a network round-trip, not a local disk read.
  */
-export function copySelectedFiles(
+export async function copySelectedFiles(
   templateRoot: TemplateRoot,
   destDir: string,
   relPaths: string[],
   dryRun: boolean
-): CopyResult[] {
-  const results: CopyResult[] = []
-  for (const relPath of relPaths) {
+): Promise<CopyResult[]> {
+  return mapWithConcurrency(relPaths, 8, async (relPath): Promise<CopyResult> => {
     const destPath = path.join(destDir, relPath)
-    if (fs.existsSync(destPath)) {
-      results.push({ relPath, status: 'skipped' })
-      continue
-    }
-    const content = readTemplateFile(templateRoot, relPath)
-    if (content === null) {
-      results.push({ relPath, status: 'missing' })
-      continue
-    }
+    if (fs.existsSync(destPath)) return { relPath, status: 'skipped' }
+
+    const content = await fetchTemplateText(templateRoot, relPath)
+    if (content === null) return { relPath, status: 'missing' }
+
     if (!dryRun) {
       fs.mkdirSync(path.dirname(destPath), { recursive: true })
       fs.writeFileSync(destPath, content)
     }
-    results.push({ relPath, status: 'written', content })
-  }
-  return results
+    return { relPath, status: 'written', content }
+  })
 }
 
 /** For the rare file that lives at the project root, not under src/ (e.g. vite-plugin-design-kit.ts). */
-export function copyTemplateRootFile(
+export async function copyTemplateRootFile(
   templateRoot: TemplateRoot,
   destRoot: string,
   relPath: string,
   dryRun: boolean
-): CopyResult {
+): Promise<CopyResult> {
   const destPath = path.join(destRoot, relPath)
   if (fs.existsSync(destPath)) return { relPath, status: 'skipped' }
-  const content = readTemplateRootFile(templateRoot, relPath)
+  const content = await fetchTemplateRootText(templateRoot, relPath)
   if (content === null) return { relPath, status: 'missing' }
   if (!dryRun) {
     fs.mkdirSync(path.dirname(destPath), { recursive: true })
@@ -75,7 +70,7 @@ export type SyncResult = {
  * touched it since) — or if `force` is passed. A file whose hash has drifted from the
  * baseline is reported as customized and left untouched.
  */
-export function syncManagedFiles(
+export async function syncManagedFiles(
   templateRoot: TemplateRoot,
   destDir: string,
   relPaths: string[],
@@ -83,14 +78,10 @@ export function syncManagedFiles(
   hashFn: (content: string) => string,
   force: boolean,
   dryRun: boolean
-): SyncResult[] {
-  const results: SyncResult[] = []
-  for (const relPath of relPaths) {
-    const templateContent = readTemplateFile(templateRoot, relPath)
-    if (templateContent === null) {
-      results.push({ relPath, status: 'missing' })
-      continue
-    }
+): Promise<SyncResult[]> {
+  return mapWithConcurrency(relPaths, 8, async (relPath): Promise<SyncResult> => {
+    const templateContent = await fetchTemplateText(templateRoot, relPath)
+    if (templateContent === null) return { relPath, status: 'missing' }
 
     const destPath = path.join(destDir, relPath)
     if (!fs.existsSync(destPath)) {
@@ -98,24 +89,20 @@ export function syncManagedFiles(
         fs.mkdirSync(path.dirname(destPath), { recursive: true })
         fs.writeFileSync(destPath, templateContent)
       }
-      results.push({ relPath, status: 'created', content: templateContent })
-      continue
+      return { relPath, status: 'created', content: templateContent }
     }
 
     const currentContent = fs.readFileSync(destPath, 'utf8')
     if (currentContent === templateContent) {
-      results.push({ relPath, status: 'up-to-date', content: templateContent })
-      continue
+      return { relPath, status: 'up-to-date', content: templateContent }
     }
 
     const currentHash = hashFn(currentContent)
     const baselineHash = baselineHashes[relPath]
     if (force || (baselineHash && currentHash === baselineHash)) {
       if (!dryRun) fs.writeFileSync(destPath, templateContent)
-      results.push({ relPath, status: 'updated', content: templateContent })
-    } else {
-      results.push({ relPath, status: 'skipped-customized' })
+      return { relPath, status: 'updated', content: templateContent }
     }
-  }
-  return results
+    return { relPath, status: 'skipped-customized' }
+  })
 }

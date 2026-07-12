@@ -89,10 +89,12 @@ export async function runNextInit(project: ProjectInfo, pm: PackageManager, opti
   const sectionFiles = demoFilesFor(navGroups).map((f) => `app/design-system/_sections/${f}`)
   const dryRun = !!options.dryRun
 
-  const nextFixed = copySelectedFiles('template-antd-next', destRoot, ALWAYS_NEXT_FILES, dryRun)
-  const nextSections = copySelectedFiles('template-antd-next', destRoot, sectionFiles, dryRun)
-  const sharedFixed = copySelectedFiles('template-antd-shared', destRoot, ALWAYS_SHARED_FILES, dryRun)
-  const themeConfig = copySelectedFiles('template-antd-shared', destRoot, ['lib/theme/theme-config.ts'], dryRun)
+  const [nextFixed, nextSections, sharedFixed, themeConfig] = await Promise.all([
+    copySelectedFiles('template-antd-next', destRoot, ALWAYS_NEXT_FILES, dryRun),
+    copySelectedFiles('template-antd-next', destRoot, sectionFiles, dryRun),
+    copySelectedFiles('template-antd-shared', destRoot, ALWAYS_SHARED_FILES, dryRun),
+    copySelectedFiles('template-antd-shared', destRoot, ['lib/theme/theme-config.ts'], dryRun),
+  ])
 
   const results = [...nextFixed, ...nextSections, ...sharedFixed, ...themeConfig]
   for (const r of results) {

@@ -45,8 +45,13 @@ components from `/design-system` (deletes their demo section, regenerates the na
 updates `antd-design-kit.json`) — since components aren't vendored source here, there's no
 dependency-closure or npm-uninstall concern the way the sibling shadcn kit's `remove` has.
 
-Not yet built: per-component token editing, a test suite, and CDN-based distribution (still
-purely local — this repo isn't pushed to GitHub yet). See
+**CDN distribution (this release):** templates are fetched live from
+`github.com/Staunchglobal/antd-design-system-kit` via jsdelivr, pinned to the exact commit SHA
+that was `HEAD` when the CLI was built (`src/lib/remote.ts`, injected by `tsup.config.ts` —
+the build refuses to run from an unpushed commit). `DESIGN_KIT_LOCAL_TEMPLATES` is a
+maintainer-only escape hatch for iterating on templates without a push-and-wait loop.
+
+Not yet built: per-component token editing and a test suite. See
 `/home/imran/.claude/plans/squishy-prancing-swan.md` for the full phased build plan.
 
 ## Development
@@ -55,11 +60,14 @@ purely local — this repo isn't pushed to GitHub yet). See
 npm install
 npm run build:registry      # scans template-antd-next/.../nav.ts + _sections/*.tsx
 npm run build:token-schema  # regenerate token-schema.generated.ts after bumping the antd devDependency
-npm run build               # tsup -> dist/cli.js
+npm run build               # tsup -> dist/cli.js (refuses to build from an unpushed HEAD)
 npm run typecheck
 
-# Test against a real scaffolded app (reads templates from local disk, no CDN yet):
+# Test against real templates fetched from the pinned commit on GitHub:
 node dist/cli.js init --cwd /path/to/your-app
+
+# Iterate on template changes locally without pushing first:
+DESIGN_KIT_LOCAL_TEMPLATES=$(pwd) node dist/cli.js init --cwd /path/to/your-app
 ```
 
 ## Usage
