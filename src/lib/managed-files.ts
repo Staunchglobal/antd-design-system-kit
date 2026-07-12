@@ -11,6 +11,7 @@
 export const ALWAYS_SHARED_FILES: string[] = [
   'lib/theme/types.ts',
   'lib/theme/token-schema.generated.ts',
+  'lib/theme/component-token-schema.generated.ts',
   'lib/theme/build-manifest.ts',
   'lib/theme/validation.ts',
   'lib/theme/theme-config-codegen.ts',
@@ -35,6 +36,7 @@ export const ALWAYS_NEXT_FILES: string[] = [
   'app/theme-editor/_components/smart-field.tsx',
   'app/theme-editor/_components/icons-form.tsx',
   'app/theme-editor/_components/appearance-form.tsx',
+  'app/theme-editor/_components/component-token-form.tsx',
   'app/theme-editor/_components/live-preview.tsx',
   'app/api/theme/save/route.ts',
 ]
@@ -50,5 +52,6 @@ export const ALWAYS_VITE_FILES: string[] = [
   'theme-editor/_components/smart-field.tsx',
   'theme-editor/_components/icons-form.tsx',
   'theme-editor/_components/appearance-form.tsx',
+  'theme-editor/_components/component-token-form.tsx',
   'theme-editor/_components/live-preview.tsx',
 ]

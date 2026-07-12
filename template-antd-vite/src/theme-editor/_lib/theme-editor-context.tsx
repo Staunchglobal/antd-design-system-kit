@@ -3,11 +3,16 @@ import { theme as antdTheme, type ThemeConfig } from 'antd'
 import type { AlgorithmChoice, ThemeManifest, TokenFieldValue } from '@/lib/theme/types'
 import type { IconKey } from '@/components/icons/icon-map'
 
+type ComponentValues = Record<string, Record<string, TokenFieldValue>>
+
 type ThemeEditorState = {
   manifest: ThemeManifest
   /** Current value for every schema field, keyed by token name — always fully populated
    * (inherited defaults included), so every field always has something to render. */
   values: Record<string, TokenFieldValue>
+  /** Only the component token fields the user has actually overridden — absence of a
+   * component/field key means "inherit antd's computed default" (see build-manifest.ts). */
+  componentValues: ComponentValues
   iconMap: Record<IconKey, string>
   algorithm: AlgorithmChoice[]
   /** Real antd algorithm function(s) for the current selection — pass straight to the
@@ -16,6 +21,8 @@ type ThemeEditorState = {
   dirty: boolean
   saving: boolean
   setValue: (name: string, value: TokenFieldValue) => void
+  setComponentValue: (component: string, field: string, value: TokenFieldValue) => void
+  clearComponentValue: (component: string, field: string) => void
   setIcon: (key: IconKey, value: string) => void
   toggleAlgorithm: (choice: AlgorithmChoice) => void
   reset: () => void
@@ -30,6 +37,28 @@ function defaultsFromManifest(manifest: ThemeManifest): Record<string, TokenFiel
     for (const field of group.fields) out[field.name] = field.value
   }
   return out
+}
+
+function componentBaselineFromManifest(manifest: ThemeManifest): ComponentValues {
+  const out: ComponentValues = {}
+  for (const group of manifest.componentGroups) {
+    const overridden = group.fields.filter((f) => f.isOverridden)
+    if (overridden.length) out[group.component] = Object.fromEntries(overridden.map((f) => [f.name, f.value as TokenFieldValue]))
+  }
+  return out
+}
+
+function sameComponentValues(a: ComponentValues, b: ComponentValues): boolean {
+  const componentNames = new Set([...Object.keys(a), ...Object.keys(b)])
+  for (const component of componentNames) {
+    const fieldsA = a[component] ?? {}
+    const fieldsB = b[component] ?? {}
+    const fieldNames = new Set([...Object.keys(fieldsA), ...Object.keys(fieldsB)])
+    for (const field of fieldNames) {
+      if (fieldsA[field] !== fieldsB[field]) return false
+    }
+  }
+  return true
 }
 
 const ALGORITHM_FN: Record<AlgorithmChoice, (typeof antdTheme)['darkAlgorithm']> = {
@@ -52,7 +81,9 @@ export function ThemeEditorProvider({
   children: React.ReactNode
 }) {
   const baseline = React.useMemo(() => defaultsFromManifest(manifest), [manifest])
+  const componentBaseline = React.useMemo(() => componentBaselineFromManifest(manifest), [manifest])
   const [values, setValues] = React.useState<Record<string, TokenFieldValue>>(baseline)
+  const [componentValues, setComponentValues] = React.useState<ComponentValues>(componentBaseline)
   const [iconMap, setIconMapState] = React.useState<Record<IconKey, string>>(initialIconMap)
   const [algorithm, setAlgorithm] = React.useState<AlgorithmChoice[]>(manifest.algorithm)
   const [saving, setSaving] = React.useState(false)
@@ -60,14 +91,29 @@ export function ThemeEditorProvider({
   const dirty = React.useMemo(
     () =>
       Object.keys(baseline).some((name) => values[name] !== baseline[name]) ||
+      !sameComponentValues(componentValues, componentBaseline) ||
       (Object.keys(iconMap) as IconKey[]).some((key) => iconMap[key] !== initialIconMap[key]) ||
       algorithm.length !== manifest.algorithm.length ||
       algorithm.some((c) => !manifest.algorithm.includes(c)),
-    [baseline, values, iconMap, initialIconMap, algorithm, manifest.algorithm]
+    [baseline, values, componentValues, componentBaseline, iconMap, initialIconMap, algorithm, manifest.algorithm]
   )
 
   const setValue = React.useCallback((name: string, value: TokenFieldValue) => {
     setValues((prev) => ({ ...prev, [name]: value }))
+  }, [])
+
+  const setComponentValue = React.useCallback((component: string, field: string, value: TokenFieldValue) => {
+    setComponentValues((prev) => ({ ...prev, [component]: { ...prev[component], [field]: value } }))
+  }, [])
+
+  const clearComponentValue = React.useCallback((component: string, field: string) => {
+    setComponentValues((prev) => {
+      if (!prev[component]) return prev
+      const { [field]: _removed, ...rest } = prev[component]
+      const next = { ...prev, [component]: rest }
+      if (Object.keys(rest).length === 0) delete next[component]
+      return next
+    })
   }, [])
 
   const setIcon = React.useCallback((key: IconKey, value: string) => {
@@ -80,9 +126,10 @@ export function ThemeEditorProvider({
 
   const reset = React.useCallback(() => {
     setValues(baseline)
+    setComponentValues(componentBaseline)
     setIconMapState(initialIconMap)
     setAlgorithm(manifest.algorithm)
-  }, [baseline, initialIconMap, manifest.algorithm])
+  }, [baseline, componentBaseline, initialIconMap, manifest.algorithm])
 
   const save = React.useCallback(async () => {
     // Only send fields that actually differ from antd's own seed default — keeps
@@ -98,13 +145,13 @@ export function ThemeEditorProvider({
       const res = await fetch('/api/theme/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: overrides, iconMap, algorithm }),
+        body: JSON.stringify({ token: overrides, components: componentValues, iconMap, algorithm }),
       })
       if (!res.ok) throw new Error(await res.text())
     } finally {
       setSaving(false)
     }
-  }, [manifest, values, iconMap, algorithm])
+  }, [manifest, values, componentValues, iconMap, algorithm])
 
   const resolvedAlgorithm = React.useMemo(() => resolveAlgorithm(algorithm), [algorithm])
 
@@ -112,18 +159,37 @@ export function ThemeEditorProvider({
     () => ({
       manifest,
       values,
+      componentValues,
       iconMap,
       algorithm,
       resolvedAlgorithm,
       dirty,
       saving,
       setValue,
+      setComponentValue,
+      clearComponentValue,
       setIcon,
       toggleAlgorithm,
       reset,
       save,
     }),
-    [manifest, values, iconMap, algorithm, resolvedAlgorithm, dirty, saving, setValue, setIcon, toggleAlgorithm, reset, save]
+    [
+      manifest,
+      values,
+      componentValues,
+      iconMap,
+      algorithm,
+      resolvedAlgorithm,
+      dirty,
+      saving,
+      setValue,
+      setComponentValue,
+      clearComponentValue,
+      setIcon,
+      toggleAlgorithm,
+      reset,
+      save,
+    ]
   )
 
   return <ThemeEditorContext.Provider value={value}>{children}</ThemeEditorContext.Provider>

@@ -1,6 +1,7 @@
 import type { TokenSchemaEntry, TokenValueType } from './token-schema.generated'
+import type { ComponentTokenSchemaEntry, ComponentTokenValueType } from './component-token-schema.generated'
 
-export type { TokenSchemaEntry, TokenValueType }
+export type { TokenSchemaEntry, TokenValueType, ComponentTokenSchemaEntry, ComponentTokenValueType }
 
 export type TokenFieldValue = string | number | boolean
 
@@ -17,6 +18,22 @@ export type ThemeTokenGroup = {
   fields: ThemeTokenField[]
 }
 
+export type ThemeComponentTokenField = ComponentTokenSchemaEntry & {
+  /** undefined means "not overridden" — antd computes this field internally from the current
+   * seed/alias tokens, so there is no static default to fall back to for display (see
+   * component-token-schema.generated.ts's header comment). */
+  value: TokenFieldValue | undefined
+  isOverridden: boolean
+}
+
+export type ThemeComponentTokenGroup = {
+  id: string
+  slug: string
+  component: string
+  title: string
+  fields: ThemeComponentTokenField[]
+}
+
 /** Composable with antd's own `[darkAlgorithm, compactAlgorithm]` pattern — no `.dark` CSS
  * class the way the sibling shadcn kit does dark mode; this is 100% algorithm-driven. */
 export type AlgorithmChoice = 'dark' | 'compact'
@@ -24,11 +41,13 @@ export type AlgorithmChoice = 'dark' | 'compact'
 export type ThemeManifest = {
   version: number
   groups: ThemeTokenGroup[]
+  componentGroups: ThemeComponentTokenGroup[]
   algorithm: AlgorithmChoice[]
 }
 
 /** POST body for /api/theme/save — only the fields the user actually overrode. */
 export type ThemeSavePayload = {
   token: Record<string, TokenFieldValue>
+  components: Record<string, Record<string, TokenFieldValue>>
   algorithm: AlgorithmChoice[]
 }

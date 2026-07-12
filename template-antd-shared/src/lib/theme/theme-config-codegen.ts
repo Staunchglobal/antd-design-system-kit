@@ -37,7 +37,8 @@ const ALGORITHM_EXPR: Record<AlgorithmChoice, string> = {
 export function serializeThemeConfig(
   existingSource: string | null,
   token: Record<string, TokenFieldValue>,
-  algorithm: AlgorithmChoice[] = []
+  algorithm: AlgorithmChoice[] = [],
+  components: Record<string, Record<string, TokenFieldValue>> = {}
 ): string {
   const leadingComment = existingSource?.match(/^(\/\*\*[\s\S]*?\*\/\n)/)?.[1] ?? DEFAULT_HEADER_COMMENT
 
@@ -46,6 +47,18 @@ export function serializeThemeConfig(
     .join('\n')
 
   const tokenBlock = tokenEntries ? `{\n${tokenEntries}\n  }` : '{}'
+
+  const componentEntries = Object.entries(components)
+    .filter(([, fields]) => Object.keys(fields).length > 0)
+    .map(([component, fields]) => {
+      const fieldEntries = Object.entries(fields)
+        .map(([name, value]) => `      ${isValidIdentifier(name) ? name : JSON.stringify(name)}: ${JSON.stringify(value)},`)
+        .join('\n')
+      return `    ${isValidIdentifier(component) ? component : JSON.stringify(component)}: {\n${fieldEntries}\n    },`
+    })
+    .join('\n')
+
+  const componentsBlock = componentEntries ? `{\n${componentEntries}\n  }` : '{}'
 
   const algorithmExprs = algorithm.map((a) => ALGORITHM_EXPR[a])
   const algorithmLine =
@@ -60,7 +73,7 @@ export function serializeThemeConfig(
 ${themeImport}
 export const themeConfig: ThemeConfig = {
   token: ${tokenBlock},
-  components: {},
+  components: ${componentsBlock},
   algorithm: ${algorithmLine},
   cssVar: {},
 }

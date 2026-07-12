@@ -45,13 +45,27 @@ components from `/design-system` (deletes their demo section, regenerates the na
 updates `antd-design-kit.json`) — since components aren't vendored source here, there's no
 dependency-closure or npm-uninstall concern the way the sibling shadcn kit's `remove` has.
 
+**Phase 4 (this release):** per-component token editing — a searchable "Components" list in
+`/theme-editor` (55 components, 582 fields, generated from each component's own shipped
+`ComponentToken` interface via `scripts/extract-component-token-schema.mjs`) where every field
+defaults to "Inherited" (antd computes it internally from the current global tokens; there's no
+static default to show) with a per-field override toggle. Overrides live in `theme-config.ts`'s
+real `components: {...}` block and flow into the live preview exactly like global tokens do.
+
 **CDN distribution (this release):** templates are fetched live from
 `github.com/Staunchglobal/antd-design-system-kit` via jsdelivr, pinned to the exact commit SHA
 that was `HEAD` when the CLI was built (`src/lib/remote.ts`, injected by `tsup.config.ts` —
 the build refuses to run from an unpushed commit). `DESIGN_KIT_LOCAL_TEMPLATES` is a
 maintainer-only escape hatch for iterating on templates without a push-and-wait loop.
 
-Not yet built: per-component token editing and a test suite. See
+**Test suite (this release):** vitest coverage for the security/correctness-critical pieces —
+`validation.ts` (`sanitizeTokenOverrides`/`sanitizeIconMap`/`sanitizeAlgorithmChoice`, including
+an injection-attempt case), `theme-config-codegen.ts` (`serializeThemeConfig`'s comment
+preservation and escaping), `build-manifest.ts` (schema/value merge, algorithm recovery by
+function-identity), `google-fonts-link.ts`, and the CLI's own `selection.ts`/`selection-state.ts`
+(including the sha256 file-hash tracking `update` relies on). Run with `npm run test`.
+
+Not yet built: the element Inspector (Phase 9 of the original plan). See
 `/home/imran/.claude/plans/squishy-prancing-swan.md` for the full phased build plan.
 
 ## Development
@@ -60,6 +74,7 @@ Not yet built: per-component token editing and a test suite. See
 npm install
 npm run build:registry      # scans template-antd-next/.../nav.ts + _sections/*.tsx
 npm run build:token-schema  # regenerate token-schema.generated.ts after bumping the antd devDependency
+npm run build:component-token-schema  # regenerate component-token-schema.generated.ts after bumping antd
 npm run build               # tsup -> dist/cli.js (refuses to build from an unpushed HEAD)
 npm run typecheck
 

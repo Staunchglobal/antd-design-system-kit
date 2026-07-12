@@ -3,6 +3,7 @@ import path from 'node:path'
 import type { Plugin, ViteDevServer } from 'vite'
 import { googleFonts } from './src/lib/theme/google-fonts.js'
 import { GLOBAL_TOKEN_SCHEMA } from './src/lib/theme/token-schema.generated.js'
+import { COMPONENT_TOKEN_SCHEMA } from './src/lib/theme/component-token-schema.generated.js'
 import { buildGoogleFontsHref, resolveWeights, type GoogleFontRequest } from './src/lib/theme/google-fonts-link.js'
 import { defaultIconMap, ICON_KEYS } from './src/components/icons/icon-map.js'
 import { serializeIconMap } from './src/components/icons/icon-map-codegen.js'
@@ -95,6 +96,37 @@ function sanitizeTokenOverrides(input: unknown): Record<string, TokenFieldValue>
   return out
 }
 
+const COMPONENT_SCHEMA_BY_NAME = new Map(COMPONENT_TOKEN_SCHEMA.map((g) => [g.component, g]))
+
+function sanitizeComponentOverrides(input: unknown): Record<string, Record<string, TokenFieldValue>> {
+  if (typeof input !== 'object' || input === null) return {}
+  const out: Record<string, Record<string, TokenFieldValue>> = {}
+  for (const [component, fields] of Object.entries(input as Record<string, unknown>)) {
+    const group = COMPONENT_SCHEMA_BY_NAME.get(component)
+    if (!group || typeof fields !== 'object' || fields === null) continue
+    const fieldSchemaByName = new Map(group.fields.map((f) => [f.name, f]))
+    const sanitizedFields: Record<string, TokenFieldValue> = {}
+    for (const [name, value] of Object.entries(fields as Record<string, unknown>)) {
+      const schema = fieldSchemaByName.get(name)
+      if (!schema) continue
+      switch (schema.valueType) {
+        case 'number':
+          if (typeof value === 'number' && Number.isFinite(value)) sanitizedFields[name] = value
+          break
+        case 'boolean':
+          if (typeof value === 'boolean') sanitizedFields[name] = value
+          break
+        case 'color-hex':
+        case 'string':
+          if (typeof value === 'string') sanitizedFields[name] = value
+          break
+      }
+    }
+    if (Object.keys(sanitizedFields).length > 0) out[component] = sanitizedFields
+  }
+  return out
+}
+
 const DEFAULT_HEADER_COMMENT = `/**
  * Source of truth for Ant Design theming — passed straight to <ConfigProvider theme={...}>.
  * Safe to hand-edit. Save from /theme-editor fully regenerates this file from editor state
@@ -127,13 +159,24 @@ function sanitizeAlgorithmChoice(input: unknown): AlgorithmChoice[] {
 function serializeThemeConfig(
   existingSource: string | null,
   token: Record<string, TokenFieldValue>,
-  algorithm: AlgorithmChoice[] = []
+  algorithm: AlgorithmChoice[] = [],
+  components: Record<string, Record<string, TokenFieldValue>> = {}
 ): string {
   const leadingComment = existingSource?.match(/^(\/\*\*[\s\S]*?\*\/\n)/)?.[1] ?? DEFAULT_HEADER_COMMENT
   const tokenEntries = Object.entries(token)
     .map(([name, value]) => `    ${isValidIdentifier(name) ? name : JSON.stringify(name)}: ${JSON.stringify(value)},`)
     .join('\n')
   const tokenBlock = tokenEntries ? `{\n${tokenEntries}\n  }` : '{}'
+  const componentEntries = Object.entries(components)
+    .filter(([, fields]) => Object.keys(fields).length > 0)
+    .map(([component, fields]) => {
+      const fieldEntries = Object.entries(fields)
+        .map(([name, value]) => `      ${isValidIdentifier(name) ? name : JSON.stringify(name)}: ${JSON.stringify(value)},`)
+        .join('\n')
+      return `    ${isValidIdentifier(component) ? component : JSON.stringify(component)}: {\n${fieldEntries}\n    },`
+    })
+    .join('\n')
+  const componentsBlock = componentEntries ? `{\n${componentEntries}\n  }` : '{}'
   const algorithmExprs = algorithm.map((a) => ALGORITHM_EXPR[a])
   const algorithmLine =
     algorithmExprs.length === 0
@@ -146,7 +189,7 @@ function serializeThemeConfig(
 ${themeImport}
 export const themeConfig: ThemeConfig = {
   token: ${tokenBlock},
-  components: {},
+  components: ${componentsBlock},
   algorithm: ${algorithmLine},
   cssVar: {},
 }
@@ -250,6 +293,10 @@ export function designKit(): Plugin {
             typeof body === 'object' && body !== null && 'token' in body
               ? sanitizeTokenOverrides((body as { token: unknown }).token)
               : {}
+          const components =
+            typeof body === 'object' && body !== null && 'components' in body
+              ? sanitizeComponentOverrides((body as { components: unknown }).components)
+              : {}
           const sanitizedIcons =
             typeof body === 'object' && body !== null && 'iconMap' in body
               ? sanitizeIconMap((body as { iconMap: unknown }).iconMap)
@@ -261,7 +308,7 @@ export function designKit(): Plugin {
 
           const themeConfigPath = path.join(server.config.root, 'src/lib/theme/theme-config.ts')
           const existingSource = fs.existsSync(themeConfigPath) ? fs.readFileSync(themeConfigPath, 'utf8') : null
-          fs.writeFileSync(themeConfigPath, serializeThemeConfig(existingSource, token, algorithm))
+          fs.writeFileSync(themeConfigPath, serializeThemeConfig(existingSource, token, algorithm, components))
 
           patchIndexHtmlFonts(server.config.root, googleFontsInUse(token))
 

@@ -1,6 +1,7 @@
 'use client'
 
-import { Button, Space, Typography, message } from 'antd'
+import * as React from 'react'
+import { Button, Divider, Input, Space, Typography, message } from 'antd'
 import { useThemeEditor } from '@/app/theme-editor/_lib/theme-editor-context'
 
 function NavButton({
@@ -52,7 +53,12 @@ export function ThemeNav({
   activeGroupId: string
   onSelectGroup: (id: string) => void
 }) {
-  const { manifest, algorithm, dirty, saving, save, reset } = useThemeEditor()
+  const { manifest, algorithm, componentValues, dirty, saving, save, reset } = useThemeEditor()
+  const [componentFilter, setComponentFilter] = React.useState('')
+
+  const filteredComponentGroups = manifest.componentGroups.filter((g) =>
+    g.title.toLowerCase().includes(componentFilter.trim().toLowerCase())
+  )
 
   const onSave = async () => {
     try {
@@ -95,6 +101,33 @@ export function ThemeNav({
             label="Icons"
             onClick={() => onSelectGroup('icons')}
           />
+        </ul>
+      </nav>
+
+      <Divider style={{ margin: 0 }}>Components</Divider>
+      <Input.Search
+        size="small"
+        placeholder="Filter components…"
+        value={componentFilter}
+        onChange={(e) => setComponentFilter(e.target.value)}
+        allowClear
+      />
+      <nav style={{ overflowY: 'auto' }}>
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {filteredComponentGroups.map((group) => (
+            <NavButton
+              key={group.id}
+              active={group.id === activeGroupId}
+              label={group.title}
+              badge={Object.keys(componentValues[group.component] ?? {}).length || undefined}
+              onClick={() => onSelectGroup(group.id)}
+            />
+          ))}
+          {filteredComponentGroups.length === 0 ? (
+            <Typography.Text type="secondary" style={{ fontSize: 12, padding: '6px 10px' }}>
+              No components match &quot;{componentFilter}&quot;.
+            </Typography.Text>
+          ) : null}
         </ul>
       </nav>
     </div>

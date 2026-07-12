@@ -8,11 +8,13 @@ import { ThemeNav } from './theme-nav'
 import { VariableForm } from './variable-form'
 import { IconsForm } from './icons-form'
 import { AppearanceForm } from './appearance-form'
+import { ComponentTokenForm } from './component-token-form'
 import { LivePreview } from './live-preview'
 
 function ShellBody() {
-  const { manifest, values, iconMap, resolvedAlgorithm } = useThemeEditor()
+  const { manifest, values, componentValues, iconMap, resolvedAlgorithm } = useThemeEditor()
   const [activeGroupId, setActiveGroupId] = React.useState(manifest.groups[0]?.id ?? '')
+  const activeComponentGroup = manifest.componentGroups.find((g) => g.id === activeGroupId)
 
   return (
     <div style={{ display: 'flex', height: '100vh' }}>
@@ -25,6 +27,8 @@ function ShellBody() {
           <IconsForm />
         ) : activeGroupId === 'appearance' ? (
           <AppearanceForm />
+        ) : activeComponentGroup ? (
+          <ComponentTokenForm group={activeComponentGroup} />
         ) : (
           <VariableForm activeGroupId={activeGroupId} />
         )}
@@ -32,7 +36,7 @@ function ShellBody() {
 
       <main style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: 16 }}>
         <Divider style={{ marginTop: 0 }}>Live preview</Divider>
-        <ConfigProvider theme={{ token: values, algorithm: resolvedAlgorithm }}>
+        <ConfigProvider theme={{ token: values, components: componentValues, algorithm: resolvedAlgorithm }}>
           <IconMapProvider value={iconMap}>
             <LivePreview />
           </IconMapProvider>

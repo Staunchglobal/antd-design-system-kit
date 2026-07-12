@@ -1,7 +1,12 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { NextResponse } from 'next/server'
-import { sanitizeTokenOverrides, sanitizeIconMap, sanitizeAlgorithmChoice } from '@/lib/theme/validation'
+import {
+  sanitizeTokenOverrides,
+  sanitizeComponentOverrides,
+  sanitizeIconMap,
+  sanitizeAlgorithmChoice,
+} from '@/lib/theme/validation'
 import { serializeThemeConfig } from '@/lib/theme/theme-config-codegen'
 import { GLOBAL_TOKEN_SCHEMA } from '@/lib/theme/token-schema.generated'
 import { googleFonts } from '@/lib/theme/google-fonts'
@@ -90,6 +95,10 @@ export async function POST(request: Request) {
     typeof body === 'object' && body !== null && 'token' in body
       ? sanitizeTokenOverrides((body as { token: unknown }).token)
       : {}
+  const components =
+    typeof body === 'object' && body !== null && 'components' in body
+      ? sanitizeComponentOverrides((body as { components: unknown }).components)
+      : {}
   const sanitizedIcons: Partial<Record<IconKey, string>> =
     typeof body === 'object' && body !== null && 'iconMap' in body
       ? sanitizeIconMap((body as { iconMap: unknown }).iconMap)
@@ -101,7 +110,7 @@ export async function POST(request: Request) {
 
   const filePath = themeConfigPath()
   const existingSource = fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : null
-  fs.writeFileSync(filePath, serializeThemeConfig(existingSource, token, algorithm))
+  fs.writeFileSync(filePath, serializeThemeConfig(existingSource, token, algorithm, components))
 
   patchLayoutFonts(googleFontsInUse(token))
 

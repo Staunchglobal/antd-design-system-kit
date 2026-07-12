@@ -1,6 +1,15 @@
 import { theme, type ThemeConfig } from 'antd'
 import { GLOBAL_TOKEN_SCHEMA } from './token-schema.generated'
-import type { AlgorithmChoice, ThemeManifest, ThemeTokenField, ThemeTokenGroup, TokenFieldValue } from './types'
+import { COMPONENT_TOKEN_SCHEMA } from './component-token-schema.generated'
+import type {
+  AlgorithmChoice,
+  ThemeComponentTokenField,
+  ThemeComponentTokenGroup,
+  ThemeManifest,
+  ThemeTokenField,
+  ThemeTokenGroup,
+  TokenFieldValue,
+} from './types'
 
 /**
  * The "manifest" is computed in-memory by combining the static, committed token schema with
@@ -26,7 +35,25 @@ export function buildThemeManifest(themeConfig: ThemeConfig): ThemeManifest {
     fields,
   }))
 
-  return { version: 1, groups, algorithm: algorithmChoiceFromConfig(themeConfig) }
+  return {
+    version: 1,
+    groups,
+    componentGroups: buildComponentTokenGroups(themeConfig),
+    algorithm: algorithmChoiceFromConfig(themeConfig),
+  }
+}
+
+function buildComponentTokenGroups(themeConfig: ThemeConfig): ThemeComponentTokenGroup[] {
+  const components = (themeConfig.components ?? {}) as Record<string, Record<string, TokenFieldValue> | undefined>
+
+  return COMPONENT_TOKEN_SCHEMA.map((group) => {
+    const overrides = components[group.component] ?? {}
+    const fields: ThemeComponentTokenField[] = group.fields.map((entry) => {
+      const isOverridden = Object.prototype.hasOwnProperty.call(overrides, entry.name)
+      return { ...entry, value: isOverridden ? overrides[entry.name] : undefined, isOverridden }
+    })
+    return { id: group.slug, slug: group.slug, component: group.component, title: group.title, fields }
+  })
 }
 
 /** antd's dark/compact algorithms are real function references, not serializable strings —
