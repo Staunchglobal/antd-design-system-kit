@@ -37,14 +37,16 @@ algorithms (composable, like antd's own `[darkAlgorithm, compactAlgorithm]` arra
 across reloads by identity-comparing `theme-config.ts`'s current `algorithm` value against the
 real `theme.darkAlgorithm`/`theme.compactAlgorithm` function references.
 
-**CLI completeness (this release):** an `update` command that re-syncs already-installed
-files to the current CLI's templates — writes anything missing, leaves anything already
-up to date, and only overwrites a hand-edited file if `--force` is passed (tracked via a
-sha256 baseline hash recorded at install/update time in `antd-design-kit.json`, the same
-"never clobber a customization" guarantee the sibling shadcn kit's `update` command has).
+**CLI completeness (this release):** `update` re-syncs already-installed files to the current
+CLI's templates — writes anything missing, leaves anything already up to date, and only
+overwrites a hand-edited file if `--force` is passed (tracked via a sha256 baseline hash
+recorded at install/update time in `antd-design-kit.json`). `remove` drops one or more
+components from `/design-system` (deletes their demo section, regenerates the nav/page,
+updates `antd-design-kit.json`) — since components aren't vendored source here, there's no
+dependency-closure or npm-uninstall concern the way the sibling shadcn kit's `remove` has.
 
-Not yet built: per-component token editing, a `remove` command, a test suite, and CDN-based
-distribution (still purely local — this repo isn't pushed to GitHub yet). See
+Not yet built: per-component token editing, a test suite, and CDN-based distribution (still
+purely local — this repo isn't pushed to GitHub yet). See
 `/home/imran/.claude/plans/squishy-prancing-swan.md` for the full phased build plan.
 
 ## Development
@@ -76,4 +78,6 @@ Visit `/design-system` for the component showcase and `/theme-editor` for live t
 node dist/cli.js update --cwd /path/to/your-app          # sync in new CLI changes
 node dist/cli.js update --cwd /path/to/your-app --force   # also overwrite customized files
 node dist/cli.js update --cwd /path/to/your-app --dry-run # preview only
+
+node dist/cli.js remove --cwd /path/to/your-app card,tag  # drop components from /design-system
 ```

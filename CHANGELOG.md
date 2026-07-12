@@ -19,3 +19,5 @@
 - `antd-design-kit update`: re-syncs installed files to the current CLI's templates, tracked
   via a sha256 baseline hash per file (`antd-design-kit.json`) so a hand-edited file is never
   overwritten unless `--force` is passed.
+- `antd-design-kit remove <slugs>`: drops components from `/design-system`, deleting their
+  demo section and regenerating the nav/page.

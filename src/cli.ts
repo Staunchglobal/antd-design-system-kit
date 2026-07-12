@@ -1,6 +1,7 @@
 import { Command } from 'commander'
 import { init } from './commands/init.js'
 import { update } from './commands/update.js'
+import { remove } from './commands/remove.js'
 import type { PackageManager } from './lib/detect.js'
 
 const program = new Command()
@@ -49,6 +50,22 @@ program
       cwd: opts.cwd,
       yes: !!opts.yes,
       force: !!opts.force,
+      dryRun: !!opts.dryRun,
+    })
+  })
+
+program
+  .command('remove')
+  .description('Remove one or more components from the /design-system showcase')
+  .argument('<components>', 'comma-separated component slugs to remove (e.g. button,card)')
+  .option('--cwd <path>', 'run against a different project directory', process.cwd())
+  .option('-y, --yes', 'skip the confirmation prompt', false)
+  .option('--dry-run', 'preview which files would be deleted without deleting anything', false)
+  .action(async (components, opts) => {
+    await remove({
+      cwd: opts.cwd,
+      yes: !!opts.yes,
+      components,
       dryRun: !!opts.dryRun,
     })
   })
