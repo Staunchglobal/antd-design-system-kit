@@ -1,5 +1,6 @@
 import { Command } from 'commander'
 import { init } from './commands/init.js'
+import { update } from './commands/update.js'
 import type { PackageManager } from './lib/detect.js'
 
 const program = new Command()
@@ -7,7 +8,7 @@ const program = new Command()
 program
   .name('antd-design-kit')
   .description(
-    'Scaffolds Ant Design v6, a design-token theme system, a /design-system showcase, and (soon) a live /theme-editor into a Next.js (App Router) or Vite + React + TypeScript project.'
+    'Scaffolds Ant Design v6, a design-token theme system, a /design-system showcase, and a live /theme-editor into a Next.js (App Router) or Vite + React + TypeScript project.'
   )
   .version('0.1.0')
 
@@ -32,6 +33,22 @@ program
       skipInstall: !!opts.skipInstall,
       all: !!opts.all,
       components: opts.components as string | undefined,
+      dryRun: !!opts.dryRun,
+    })
+  })
+
+program
+  .command('update')
+  .description("Re-sync your currently-installed files to this CLI version's templates (skips anything you've customized)")
+  .option('--cwd <path>', 'run against a different project directory', process.cwd())
+  .option('-y, --yes', 'skip confirmation prompts', false)
+  .option('--force', 'overwrite files that look customized too', false)
+  .option('--dry-run', 'preview which files would be updated without writing anything', false)
+  .action(async (opts) => {
+    await update({
+      cwd: opts.cwd,
+      yes: !!opts.yes,
+      force: !!opts.force,
       dryRun: !!opts.dryRun,
     })
   })

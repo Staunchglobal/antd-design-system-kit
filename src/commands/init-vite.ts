@@ -10,7 +10,7 @@ import { patchViteConfig, VITE_CONFIG_MANUAL_SNIPPET } from '../lib/patch-vite-c
 import { confirm } from '../lib/confirm.js'
 import { pickComponents } from '../lib/prompt-components.js'
 import { navGroupsFor, demoFilesFor } from '../lib/selection.js'
-import { writeSelectionConfig, priorSelectionFor } from '../lib/selection-state.js'
+import { writeSelectionConfig, priorSelectionFor, recordFileHashes } from '../lib/selection-state.js'
 import { ALWAYS_SHARED_FILES, ALWAYS_VITE_FILES } from '../lib/managed-files.js'
 import { generateDesignSystemPage, generateNavTs } from '../lib/codegen.js'
 import type { InitOptions } from './init-next.js'
@@ -87,6 +87,15 @@ export async function runViteInit(project: ProjectInfo, pm: PackageManager, opti
   if (pluginFile.status === 'written') log[dryRun ? 'info' : 'success'](dryRun ? `Would copy ${pluginFile.relPath}` : pluginFile.relPath)
   else if (pluginFile.status === 'skipped') log.skip(`${pluginFile.relPath} (already exists — left untouched)`)
   else log.warn(`Missing template file: ${pluginFile.relPath}`)
+
+  if (!dryRun) {
+    recordFileHashes(
+      root,
+      [...results, pluginFile]
+        .filter((r): r is typeof r & { content: string } => r.status === 'written' && r.content !== undefined)
+        .map((r) => ({ relPath: r.relPath, content: r.content }))
+    )
+  }
 
   writeGeneratedFile(destRoot, 'design-system/_lib/nav.ts', generateNavTs(navGroups), dryRun)
   log.success(`${dryRun ? 'Would generate' : 'Generated'} src/design-system/_lib/nav.ts`)

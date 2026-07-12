@@ -37,8 +37,14 @@ algorithms (composable, like antd's own `[darkAlgorithm, compactAlgorithm]` arra
 across reloads by identity-comparing `theme-config.ts`'s current `algorithm` value against the
 real `theme.darkAlgorithm`/`theme.compactAlgorithm` function references.
 
-Not yet built: per-component token editing, `update`/`remove` commands, a test suite, and
-CDN-based distribution (still purely local — this repo isn't pushed to GitHub yet). See
+**CLI completeness (this release):** an `update` command that re-syncs already-installed
+files to the current CLI's templates — writes anything missing, leaves anything already
+up to date, and only overwrites a hand-edited file if `--force` is passed (tracked via a
+sha256 baseline hash recorded at install/update time in `antd-design-kit.json`, the same
+"never clobber a customization" guarantee the sibling shadcn kit's `update` command has).
+
+Not yet built: per-component token editing, a `remove` command, a test suite, and CDN-based
+distribution (still purely local — this repo isn't pushed to GitHub yet). See
 `/home/imran/.claude/plans/squishy-prancing-swan.md` for the full phased build plan.
 
 ## Development
@@ -65,3 +71,9 @@ Flags: `--all` (include every component), `--components button,card,form` (expli
 
 Visit `/design-system` for the component showcase and `/theme-editor` for live theme editing
 (dev-only — the save endpoint 403s in a production build).
+
+```bash
+node dist/cli.js update --cwd /path/to/your-app          # sync in new CLI changes
+node dist/cli.js update --cwd /path/to/your-app --force   # also overwrite customized files
+node dist/cli.js update --cwd /path/to/your-app --dry-run # preview only
+```

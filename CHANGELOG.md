@@ -16,3 +16,6 @@
   `AntdThemeProvider` Client Component wrapper — passing `themeConfig` (which can contain real
   algorithm function references) directly as a prop from the Server Component root layout
   crashes Next's Turbopack build.
+- `antd-design-kit update`: re-syncs installed files to the current CLI's templates, tracked
+  via a sha256 baseline hash per file (`antd-design-kit.json`) so a hand-edited file is never
+  overwritten unless `--force` is passed.
