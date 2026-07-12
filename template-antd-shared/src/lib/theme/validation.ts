@@ -1,6 +1,17 @@
 import { GLOBAL_TOKEN_SCHEMA } from './token-schema.generated'
-import type { TokenFieldValue } from './types'
+import type { AlgorithmChoice, TokenFieldValue } from './types'
 import { ICON_KEYS, type IconKey } from '../../components/icons/icon-map'
+
+const KNOWN_ALGORITHM_CHOICES: AlgorithmChoice[] = ['dark', 'compact']
+
+export function sanitizeAlgorithmChoice(input: unknown): AlgorithmChoice[] {
+  if (!Array.isArray(input)) return []
+  const out: AlgorithmChoice[] = []
+  for (const item of input) {
+    if (KNOWN_ALGORITHM_CHOICES.includes(item) && !out.includes(item)) out.push(item)
+  }
+  return out
+}
 
 const SCHEMA_BY_NAME = new Map(GLOBAL_TOKEN_SCHEMA.map((e) => [e.name, e]))
 

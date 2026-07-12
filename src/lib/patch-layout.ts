@@ -7,14 +7,17 @@ export type LayoutPatchResult =
   | { action: 'needs-manual'; reason: string }
 
 const REGISTRY_IMPORT = `import { AntdRegistry } from '@ant-design/nextjs-registry'`
-const CONFIG_PROVIDER_IMPORT = `import { ConfigProvider } from 'antd'`
-const THEME_CONFIG_IMPORT = `import { themeConfig } from '@/lib/theme/theme-config'`
+const THEME_PROVIDER_IMPORT = `import { AntdThemeProvider } from '@/app/theme-provider'`
 
 /**
  * Wraps the single `{children}` expression in layout.tsx with
- * <AntdRegistry><ConfigProvider theme={themeConfig}>{children}</ConfigProvider></AntdRegistry>
+ * <AntdRegistry><AntdThemeProvider>{children}</AntdThemeProvider></AntdRegistry>
  * — the official SSR-safe pattern for Ant Design under the Next.js App Router (AntdRegistry
  * handles the @ant-design/cssinjs style-extraction/flush dance into the RSC stream).
+ * `AntdThemeProvider` (not a raw `<ConfigProvider theme={themeConfig}>` here) is deliberate —
+ * `themeConfig` can contain real function references (dark/compact mode algorithms), and
+ * passing those as a prop straight from this Server Component crashes Next's Turbopack build;
+ * see template-antd-next/src/app/theme-provider.tsx for the full explanation.
  *
  * Uses ts-morph to find the real `{children}` JsxExpression (not a plain regex, which can't
  * tell a JSX child apart from the `children` identifier in the function's own destructured
@@ -58,13 +61,13 @@ export function patchLayout(filePath: string): LayoutPatchResult {
   const childrenNode = childrenExpressions[0]
   const replacement = [
     '<AntdRegistry>',
-    '          <ConfigProvider theme={themeConfig}>{children}</ConfigProvider>',
+    '          <AntdThemeProvider>{children}</AntdThemeProvider>',
     '        </AntdRegistry>',
   ].join('\n')
   src = src.slice(0, childrenNode.getStart()) + replacement + src.slice(childrenNode.getEnd())
 
   const insertAt = importDecls[importDecls.length - 1].getEnd()
-  const imports = [REGISTRY_IMPORT, CONFIG_PROVIDER_IMPORT, THEME_CONFIG_IMPORT].join('\n')
+  const imports = [REGISTRY_IMPORT, THEME_PROVIDER_IMPORT].join('\n')
   src = src.slice(0, insertAt) + `\n${imports}` + src.slice(insertAt)
 
   fs.writeFileSync(filePath, src)

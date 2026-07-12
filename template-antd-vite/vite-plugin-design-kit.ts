@@ -19,6 +19,7 @@ import { serializeIconMap } from './src/components/icons/icon-map-codegen.js'
  */
 type TokenFieldValue = string | number | boolean
 type TokenValueType = 'color-hex' | 'number' | 'font-family' | 'boolean' | 'easing-string' | 'enum'
+type AlgorithmChoice = 'dark' | 'compact'
 
 const SCHEMA_BY_NAME: Record<string, { valueType: TokenValueType; enumOptions?: string[] }> = {
   colorPrimary: { valueType: 'color-hex' },
@@ -108,17 +109,45 @@ function isValidIdentifier(name: string): boolean {
   return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name)
 }
 
-function serializeThemeConfig(existingSource: string | null, token: Record<string, TokenFieldValue>): string {
+const ALGORITHM_EXPR: Record<AlgorithmChoice, string> = {
+  dark: 'theme.darkAlgorithm',
+  compact: 'theme.compactAlgorithm',
+}
+const KNOWN_ALGORITHM_CHOICES: AlgorithmChoice[] = ['dark', 'compact']
+
+function sanitizeAlgorithmChoice(input: unknown): AlgorithmChoice[] {
+  if (!Array.isArray(input)) return []
+  const out: AlgorithmChoice[] = []
+  for (const item of input) {
+    if (KNOWN_ALGORITHM_CHOICES.includes(item) && !out.includes(item)) out.push(item)
+  }
+  return out
+}
+
+function serializeThemeConfig(
+  existingSource: string | null,
+  token: Record<string, TokenFieldValue>,
+  algorithm: AlgorithmChoice[] = []
+): string {
   const leadingComment = existingSource?.match(/^(\/\*\*[\s\S]*?\*\/\n)/)?.[1] ?? DEFAULT_HEADER_COMMENT
   const tokenEntries = Object.entries(token)
     .map(([name, value]) => `    ${isValidIdentifier(name) ? name : JSON.stringify(name)}: ${JSON.stringify(value)},`)
     .join('\n')
   const tokenBlock = tokenEntries ? `{\n${tokenEntries}\n  }` : '{}'
+  const algorithmExprs = algorithm.map((a) => ALGORITHM_EXPR[a])
+  const algorithmLine =
+    algorithmExprs.length === 0
+      ? 'undefined'
+      : algorithmExprs.length === 1
+        ? algorithmExprs[0]
+        : `[${algorithmExprs.join(', ')}]`
+  const themeImport = algorithmExprs.length > 0 ? `import { theme } from 'antd'\n` : ''
   return `${leadingComment}import type { ThemeConfig } from 'antd'
-
+${themeImport}
 export const themeConfig: ThemeConfig = {
   token: ${tokenBlock},
   components: {},
+  algorithm: ${algorithmLine},
   cssVar: {},
 }
 `
@@ -225,10 +254,14 @@ export function designKit(): Plugin {
             typeof body === 'object' && body !== null && 'iconMap' in body
               ? sanitizeIconMap((body as { iconMap: unknown }).iconMap)
               : {}
+          const algorithm =
+            typeof body === 'object' && body !== null && 'algorithm' in body
+              ? sanitizeAlgorithmChoice((body as { algorithm: unknown }).algorithm)
+              : []
 
           const themeConfigPath = path.join(server.config.root, 'src/lib/theme/theme-config.ts')
           const existingSource = fs.existsSync(themeConfigPath) ? fs.readFileSync(themeConfigPath, 'utf8') : null
-          fs.writeFileSync(themeConfigPath, serializeThemeConfig(existingSource, token))
+          fs.writeFileSync(themeConfigPath, serializeThemeConfig(existingSource, token, algorithm))
 
           patchIndexHtmlFonts(server.config.root, googleFontsInUse(token))
 

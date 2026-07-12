@@ -50,7 +50,7 @@ export function ThemeNav({
   activeGroupId: string
   onSelectGroup: (id: string) => void
 }) {
-  const { manifest, dirty, saving, save, reset } = useThemeEditor()
+  const { manifest, algorithm, dirty, saving, save, reset } = useThemeEditor()
 
   const onSave = async () => {
     try {
@@ -73,6 +73,12 @@ export function ThemeNav({
       </Space>
       <nav>
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <NavButton
+            active={activeGroupId === 'appearance'}
+            label="Appearance"
+            badge={algorithm.length || undefined}
+            onClick={() => onSelectGroup('appearance')}
+          />
           {manifest.groups.map((group) => (
             <NavButton
               key={group.id}

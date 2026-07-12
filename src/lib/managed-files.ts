@@ -24,6 +24,7 @@ export const ALWAYS_SHARED_FILES: string[] = [
 ]
 
 export const ALWAYS_NEXT_FILES: string[] = [
+  'app/theme-provider.tsx',
   'app/design-system/_lib/showcase.tsx',
   'app/design-system/_components/sidebar-nav.tsx',
   'app/theme-editor/page.tsx',
@@ -33,6 +34,7 @@ export const ALWAYS_NEXT_FILES: string[] = [
   'app/theme-editor/_components/variable-form.tsx',
   'app/theme-editor/_components/smart-field.tsx',
   'app/theme-editor/_components/icons-form.tsx',
+  'app/theme-editor/_components/appearance-form.tsx',
   'app/theme-editor/_components/live-preview.tsx',
   'app/api/theme/save/route.ts',
 ]
@@ -47,5 +49,6 @@ export const ALWAYS_VITE_FILES: string[] = [
   'theme-editor/_components/variable-form.tsx',
   'theme-editor/_components/smart-field.tsx',
   'theme-editor/_components/icons-form.tsx',
+  'theme-editor/_components/appearance-form.tsx',
   'theme-editor/_components/live-preview.tsx',
 ]

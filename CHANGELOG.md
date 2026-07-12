@@ -12,3 +12,7 @@
   on save) and a scoped app-level icon-remapping system, generated from
   `scripts/generate-icon-reexports.mjs` to work around a Turbopack SSR crash on namespace-
   importing `@ant-design/icons` directly.
+- Phase 5: dark/compact mode toggles (antd's algorithm composition), via a new
+  `AntdThemeProvider` Client Component wrapper — passing `themeConfig` (which can contain real
+  algorithm function references) directly as a prop from the Server Component root layout
+  crashes Next's Turbopack build.

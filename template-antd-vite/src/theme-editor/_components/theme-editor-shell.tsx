@@ -7,10 +7,11 @@ import { ThemeEditorProvider, useThemeEditor } from '@/theme-editor/_lib/theme-e
 import { ThemeNav } from './theme-nav'
 import { VariableForm } from './variable-form'
 import { IconsForm } from './icons-form'
+import { AppearanceForm } from './appearance-form'
 import { LivePreview } from './live-preview'
 
 function ShellBody() {
-  const { manifest, values, iconMap } = useThemeEditor()
+  const { manifest, values, iconMap, resolvedAlgorithm } = useThemeEditor()
   const [activeGroupId, setActiveGroupId] = React.useState(manifest.groups[0]?.id ?? '')
 
   return (
@@ -20,12 +21,18 @@ function ShellBody() {
       </aside>
 
       <section style={{ width: 420, flexShrink: 0, borderRight: '1px solid rgba(5,5,5,0.06)', padding: 16, overflowY: 'auto' }}>
-        {activeGroupId === 'icons' ? <IconsForm /> : <VariableForm activeGroupId={activeGroupId} />}
+        {activeGroupId === 'icons' ? (
+          <IconsForm />
+        ) : activeGroupId === 'appearance' ? (
+          <AppearanceForm />
+        ) : (
+          <VariableForm activeGroupId={activeGroupId} />
+        )}
       </section>
 
       <main style={{ flex: 1, minWidth: 0, overflowY: 'auto', padding: 16 }}>
         <Divider style={{ marginTop: 0 }}>Live preview</Divider>
-        <ConfigProvider theme={{ token: values }}>
+        <ConfigProvider theme={{ token: values, algorithm: resolvedAlgorithm }}>
           <IconMapProvider value={iconMap}>
             <LivePreview />
           </IconMapProvider>

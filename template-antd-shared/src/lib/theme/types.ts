@@ -17,12 +17,18 @@ export type ThemeTokenGroup = {
   fields: ThemeTokenField[]
 }
 
+/** Composable with antd's own `[darkAlgorithm, compactAlgorithm]` pattern — no `.dark` CSS
+ * class the way the sibling shadcn kit does dark mode; this is 100% algorithm-driven. */
+export type AlgorithmChoice = 'dark' | 'compact'
+
 export type ThemeManifest = {
   version: number
   groups: ThemeTokenGroup[]
+  algorithm: AlgorithmChoice[]
 }
 
 /** POST body for /api/theme/save — only the fields the user actually overrode. */
 export type ThemeSavePayload = {
   token: Record<string, TokenFieldValue>
+  algorithm: AlgorithmChoice[]
 }

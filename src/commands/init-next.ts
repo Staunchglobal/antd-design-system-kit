@@ -146,13 +146,13 @@ export async function runNextInit(project: ProjectInfo, pm: PackageManager, opti
   const layoutPath = path.join(destRoot, 'app/layout.tsx')
   const layoutResult = patchLayout(layoutPath)
   if (layoutResult.action === 'patched') {
-    log.success(`Wired AntdRegistry + ConfigProvider into ${rel('app/layout.tsx')}`)
+    log.success(`Wired AntdRegistry + AntdThemeProvider into ${rel('app/layout.tsx')}`)
   } else if (layoutResult.action === 'already-present') {
     log.skip(`${rel('app/layout.tsx')} already wires up AntdRegistry`)
   } else {
     log.warn(`Couldn't auto-wire ${rel('app/layout.tsx')} (${layoutResult.reason})`)
     log.info(
-      `Add this yourself:\n  import { AntdRegistry } from '@ant-design/nextjs-registry'\n  import { ConfigProvider } from 'antd'\n  import { themeConfig } from '@/lib/theme/theme-config'\n  …\n  <AntdRegistry><ConfigProvider theme={themeConfig}>{children}</ConfigProvider></AntdRegistry>`
+      `Add this yourself:\n  import { AntdRegistry } from '@ant-design/nextjs-registry'\n  import { AntdThemeProvider } from '@/app/theme-provider'\n  …\n  <AntdRegistry><AntdThemeProvider>{children}</AntdThemeProvider></AntdRegistry>`
     )
   }
 

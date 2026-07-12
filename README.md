@@ -32,9 +32,14 @@ file (`icon-reexports.generated.ts`, `scripts/generate-icon-reexports.mjs`), not
 import of `@ant-design/icons` directly — that crashes Next's Turbopack SSR bundler with
 `'ownKeys' on proxy: trap returned extra keys but proxy target is non-extensible`.
 
-Not yet built: per-component token editing, dark/compact mode, `update`/`remove` commands, a
-test suite, and CDN-based distribution (still purely local — this repo isn't pushed to GitHub
-yet). See `/home/imran/.claude/plans/squishy-prancing-swan.md` for the full phased build plan.
+**Phase 5 (this release):** an "Appearance" theme-editor group toggling antd's dark/compact
+algorithms (composable, like antd's own `[darkAlgorithm, compactAlgorithm]` array), recovered
+across reloads by identity-comparing `theme-config.ts`'s current `algorithm` value against the
+real `theme.darkAlgorithm`/`theme.compactAlgorithm` function references.
+
+Not yet built: per-component token editing, `update`/`remove` commands, a test suite, and
+CDN-based distribution (still purely local — this repo isn't pushed to GitHub yet). See
+`/home/imran/.claude/plans/squishy-prancing-swan.md` for the full phased build plan.
 
 ## Development
 

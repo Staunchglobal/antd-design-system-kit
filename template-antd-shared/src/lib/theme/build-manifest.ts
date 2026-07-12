@@ -1,6 +1,6 @@
-import type { ThemeConfig } from 'antd'
+import { theme, type ThemeConfig } from 'antd'
 import { GLOBAL_TOKEN_SCHEMA } from './token-schema.generated'
-import type { ThemeManifest, ThemeTokenField, ThemeTokenGroup, TokenFieldValue } from './types'
+import type { AlgorithmChoice, ThemeManifest, ThemeTokenField, ThemeTokenGroup, TokenFieldValue } from './types'
 
 /**
  * The "manifest" is computed in-memory by combining the static, committed token schema with
@@ -26,5 +26,17 @@ export function buildThemeManifest(themeConfig: ThemeConfig): ThemeManifest {
     fields,
   }))
 
-  return { version: 1, groups }
+  return { version: 1, groups, algorithm: algorithmChoiceFromConfig(themeConfig) }
+}
+
+/** antd's dark/compact algorithms are real function references, not serializable strings —
+ * recover the current selection by identity comparison against `theme-config.ts`'s actual
+ * `algorithm` value. */
+function algorithmChoiceFromConfig(themeConfig: ThemeConfig): AlgorithmChoice[] {
+  const raw = themeConfig.algorithm
+  const list = Array.isArray(raw) ? raw : raw ? [raw] : []
+  const choice: AlgorithmChoice[] = []
+  if (list.includes(theme.darkAlgorithm)) choice.push('dark')
+  if (list.includes(theme.compactAlgorithm)) choice.push('compact')
+  return choice
 }

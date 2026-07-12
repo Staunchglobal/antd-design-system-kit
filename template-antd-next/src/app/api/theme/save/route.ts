@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { NextResponse } from 'next/server'
-import { sanitizeTokenOverrides, sanitizeIconMap } from '@/lib/theme/validation'
+import { sanitizeTokenOverrides, sanitizeIconMap, sanitizeAlgorithmChoice } from '@/lib/theme/validation'
 import { serializeThemeConfig } from '@/lib/theme/theme-config-codegen'
 import { GLOBAL_TOKEN_SCHEMA } from '@/lib/theme/token-schema.generated'
 import { googleFonts } from '@/lib/theme/google-fonts'
@@ -94,10 +94,14 @@ export async function POST(request: Request) {
     typeof body === 'object' && body !== null && 'iconMap' in body
       ? sanitizeIconMap((body as { iconMap: unknown }).iconMap)
       : {}
+  const algorithm =
+    typeof body === 'object' && body !== null && 'algorithm' in body
+      ? sanitizeAlgorithmChoice((body as { algorithm: unknown }).algorithm)
+      : []
 
   const filePath = themeConfigPath()
   const existingSource = fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : null
-  fs.writeFileSync(filePath, serializeThemeConfig(existingSource, token))
+  fs.writeFileSync(filePath, serializeThemeConfig(existingSource, token, algorithm))
 
   patchLayoutFonts(googleFontsInUse(token))
 
