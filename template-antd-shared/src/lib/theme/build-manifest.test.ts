@@ -49,12 +49,12 @@ describe('buildThemeManifest', () => {
 })
 
 describe('buildThemeManifest componentGroups', () => {
-  it('includes a group for every schema component, none overridden by default', () => {
+  it('includes a group for every schema component, each field set to its real computed default', () => {
     const manifest = buildThemeManifest({ token: {} })
     expect(manifest.componentGroups.length).toBeGreaterThan(0)
     const button = manifest.componentGroups.find((g) => g.component === 'Button')
     expect(button).toBeDefined()
-    expect(button!.fields.every((f) => !f.isOverridden && f.value === undefined)).toBe(true)
+    expect(button!.fields.every((f) => !f.isOverridden && f.value === f.defaultValue)).toBe(true)
   })
 
   it('marks a field overridden and surfaces its value when set in theme-config.ts', () => {
@@ -65,11 +65,16 @@ describe('buildThemeManifest componentGroups', () => {
     expect(primaryColor?.value).toBe('#00ff00')
   })
 
-  it('leaves other fields on the same component as not overridden', () => {
+  it('leaves other fields on the same component at their default, not overridden', () => {
     const manifest = buildThemeManifest({ token: {}, components: { Button: { primaryColor: '#00ff00' } } })
     const button = manifest.componentGroups.find((g) => g.component === 'Button')!
     const defaultColor = button.fields.find((f) => f.name === 'defaultColor')
     expect(defaultColor?.isOverridden).toBe(false)
-    expect(defaultColor?.value).toBeUndefined()
+    expect(defaultColor?.value).toBe(defaultColor?.defaultValue)
+  })
+
+  it('filters componentGroups down to the given slugs when componentSlugs is passed', () => {
+    const manifest = buildThemeManifest({ token: {} }, { componentSlugs: ['button', 'card'] })
+    expect(manifest.componentGroups.map((g) => g.slug).sort()).toEqual(['button', 'card'])
   })
 })

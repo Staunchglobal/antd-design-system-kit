@@ -8,10 +8,10 @@ type ComponentValues = Record<string, Record<string, TokenFieldValue>>
 type ThemeEditorState = {
   manifest: ThemeManifest
   /** Current value for every schema field, keyed by token name — always fully populated
-   * (inherited defaults included), so every field always has something to render. */
+   * (defaults included), so every field always has something to render. */
   values: Record<string, TokenFieldValue>
-  /** Only the component token fields the user has actually overridden — absence of a
-   * component/field key means "inherit antd's computed default" (see build-manifest.ts). */
+  /** Current value for every per-component token field, keyed by component then field name —
+   * always fully populated with antd's own real computed default, same as `values`. */
   componentValues: ComponentValues
   iconMap: Record<IconKey, string>
   algorithm: AlgorithmChoice[]
@@ -22,7 +22,6 @@ type ThemeEditorState = {
   saving: boolean
   setValue: (name: string, value: TokenFieldValue) => void
   setComponentValue: (component: string, field: string, value: TokenFieldValue) => void
-  clearComponentValue: (component: string, field: string) => void
   setIcon: (key: IconKey, value: string) => void
   toggleAlgorithm: (choice: AlgorithmChoice) => void
   reset: () => void
@@ -39,11 +38,10 @@ function defaultsFromManifest(manifest: ThemeManifest): Record<string, TokenFiel
   return out
 }
 
-function componentBaselineFromManifest(manifest: ThemeManifest): ComponentValues {
+function componentValuesFromManifest(manifest: ThemeManifest): ComponentValues {
   const out: ComponentValues = {}
   for (const group of manifest.componentGroups) {
-    const overridden = group.fields.filter((f) => f.isOverridden)
-    if (overridden.length) out[group.component] = Object.fromEntries(overridden.map((f) => [f.name, f.value as TokenFieldValue]))
+    out[group.component] = Object.fromEntries(group.fields.map((f) => [f.name, f.value]))
   }
   return out
 }
@@ -81,7 +79,7 @@ export function ThemeEditorProvider({
   children: React.ReactNode
 }) {
   const baseline = React.useMemo(() => defaultsFromManifest(manifest), [manifest])
-  const componentBaseline = React.useMemo(() => componentBaselineFromManifest(manifest), [manifest])
+  const componentBaseline = React.useMemo(() => componentValuesFromManifest(manifest), [manifest])
   const [values, setValues] = React.useState<Record<string, TokenFieldValue>>(baseline)
   const [componentValues, setComponentValues] = React.useState<ComponentValues>(componentBaseline)
   const [iconMap, setIconMapState] = React.useState<Record<IconKey, string>>(initialIconMap)
@@ -106,16 +104,6 @@ export function ThemeEditorProvider({
     setComponentValues((prev) => ({ ...prev, [component]: { ...prev[component], [field]: value } }))
   }, [])
 
-  const clearComponentValue = React.useCallback((component: string, field: string) => {
-    setComponentValues((prev) => {
-      if (!prev[component]) return prev
-      const { [field]: _removed, ...rest } = prev[component]
-      const next = { ...prev, [component]: rest }
-      if (Object.keys(rest).length === 0) delete next[component]
-      return next
-    })
-  }, [])
-
   const setIcon = React.useCallback((key: IconKey, value: string) => {
     setIconMapState((prev) => ({ ...prev, [key]: value }))
   }, [])
@@ -132,20 +120,31 @@ export function ThemeEditorProvider({
   }, [baseline, componentBaseline, initialIconMap, manifest.algorithm])
 
   const save = React.useCallback(async () => {
-    // Only send fields that actually differ from antd's own seed default — keeps
-    // theme-config.ts minimal, matching antd's own idiomatic "only override what you need".
+    // Only send fields that actually differ from antd's own default — keeps theme-config.ts
+    // minimal, matching antd's own idiomatic "only override what you need".
     const overrides: Record<string, TokenFieldValue> = {}
     for (const group of manifest.groups) {
       for (const field of group.fields) {
         if (values[field.name] !== field.defaultValue) overrides[field.name] = values[field.name]
       }
     }
+
+    const componentOverrides: Record<string, Record<string, TokenFieldValue>> = {}
+    for (const group of manifest.componentGroups) {
+      const fieldOverrides: Record<string, TokenFieldValue> = {}
+      for (const field of group.fields) {
+        const current = componentValues[group.component]?.[field.name]
+        if (current !== undefined && current !== field.defaultValue) fieldOverrides[field.name] = current
+      }
+      if (Object.keys(fieldOverrides).length) componentOverrides[group.component] = fieldOverrides
+    }
+
     setSaving(true)
     try {
       const res = await fetch('/api/theme/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: overrides, components: componentValues, iconMap, algorithm }),
+        body: JSON.stringify({ token: overrides, components: componentOverrides, iconMap, algorithm }),
       })
       if (!res.ok) throw new Error(await res.text())
     } finally {
@@ -167,7 +166,6 @@ export function ThemeEditorProvider({
       saving,
       setValue,
       setComponentValue,
-      clearComponentValue,
       setIcon,
       toggleAlgorithm,
       reset,
@@ -184,7 +182,6 @@ export function ThemeEditorProvider({
       saving,
       setValue,
       setComponentValue,
-      clearComponentValue,
       setIcon,
       toggleAlgorithm,
       reset,

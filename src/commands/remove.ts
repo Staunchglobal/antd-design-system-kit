@@ -8,7 +8,10 @@ import {
   generateDesignSystemContent,
   generateDesignSystemPage,
   generateDesignSystemPageShell,
+  generateLivePreview,
   generateNavTs,
+  generateThemeEditorPage,
+  generateThemeEditorPageVite,
 } from '../lib/codegen.js'
 import { writeGeneratedFile } from '../lib/copy.js'
 
@@ -99,6 +102,22 @@ export async function remove(options: RemoveOptions) {
       generateDesignSystemPageShell({ contentImport: '@/app/design-system/_components/design-system-content' }),
       dryRun
     )
+    writeGeneratedFile(
+      destRoot,
+      'app/theme-editor/page.tsx',
+      generateThemeEditorPage({ componentSlugs: [...newSelection].sort() }),
+      dryRun
+    )
+    writeGeneratedFile(
+      destRoot,
+      'app/theme-editor/_components/live-preview.tsx',
+      generateLivePreview({
+        navGroups,
+        designSystemImportBase: '@/app/design-system',
+        useClient: true,
+      }),
+      dryRun
+    )
   } else {
     writeGeneratedFile(destRoot, 'design-system/_lib/nav.ts', generateNavTs(navGroups), dryRun)
     writeGeneratedFile(
@@ -111,8 +130,24 @@ export async function remove(options: RemoveOptions) {
       }),
       dryRun
     )
+    writeGeneratedFile(
+      destRoot,
+      'theme-editor/ThemeEditorPage.tsx',
+      generateThemeEditorPageVite({ componentSlugs: [...newSelection].sort() }),
+      dryRun
+    )
+    writeGeneratedFile(
+      destRoot,
+      'theme-editor/_components/live-preview.tsx',
+      generateLivePreview({
+        navGroups,
+        designSystemImportBase: '@/design-system',
+        useClient: false,
+      }),
+      dryRun
+    )
   }
-  log.success('Regenerated /design-system.')
+  log.success('Regenerated /design-system and /theme-editor.')
 
   writeSelectionConfig(root, config.framework, newSelection)
 

@@ -19,10 +19,12 @@ export type ThemeTokenGroup = {
 }
 
 export type ThemeComponentTokenField = ComponentTokenSchemaEntry & {
-  /** undefined means "not overridden" — antd computes this field internally from the current
-   * seed/alias tokens, so there is no static default to fall back to for display (see
-   * component-token-schema.generated.ts's header comment). */
-  value: TokenFieldValue | undefined
+  /** Always a real, concrete value — antd's own computed default when not overridden, or the
+   * user's override. Every field is always editable with a starting value, same as global
+   * seed tokens; there's no "inherited/unset" display state. */
+  value: TokenFieldValue
+  /** true if this field's value differs from antd's own computed default (i.e. it would
+   * actually be written into theme-config.ts on Save). */
   isOverridden: boolean
 }
 

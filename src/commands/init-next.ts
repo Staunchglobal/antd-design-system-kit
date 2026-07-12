@@ -11,7 +11,13 @@ import { pickComponents } from '../lib/prompt-components.js'
 import { navGroupsFor, demoFilesFor } from '../lib/selection.js'
 import { writeSelectionConfig, priorSelectionFor, recordFileHashes } from '../lib/selection-state.js'
 import { ALWAYS_NEXT_FILES, ALWAYS_SHARED_FILES } from '../lib/managed-files.js'
-import { generateDesignSystemContent, generateDesignSystemPageShell, generateNavTs } from '../lib/codegen.js'
+import {
+  generateDesignSystemContent,
+  generateDesignSystemPageShell,
+  generateLivePreview,
+  generateNavTs,
+  generateThemeEditorPage,
+} from '../lib/codegen.js'
 
 export type InitOptions = {
   cwd: string
@@ -136,6 +142,24 @@ export async function runNextInit(project: ProjectInfo, pm: PackageManager, opti
     dryRun
   )
   log.success(`${dryRun ? 'Would generate' : 'Generated'} ${rel('app/design-system/page.tsx')}`)
+
+  writeGeneratedFile(
+    destRoot,
+    'app/theme-editor/page.tsx',
+    generateThemeEditorPage({ componentSlugs: [...selected].sort() }),
+    dryRun
+  )
+  writeGeneratedFile(
+    destRoot,
+    'app/theme-editor/_components/live-preview.tsx',
+    generateLivePreview({
+      navGroups,
+      designSystemImportBase: '@/app/design-system',
+      useClient: true,
+    }),
+    dryRun
+  )
+  log.success(`${dryRun ? 'Would generate' : 'Generated'} ${rel('app/theme-editor/page.tsx')} and live-preview.tsx`)
 
   if (dryRun) {
     log.title('Wiring it up')

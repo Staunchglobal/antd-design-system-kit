@@ -114,15 +114,20 @@ export function ThemeNav({
       />
       <nav style={{ overflowY: 'auto' }}>
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {filteredComponentGroups.map((group) => (
-            <NavButton
-              key={group.id}
-              active={group.id === activeGroupId}
-              label={group.title}
-              badge={Object.keys(componentValues[group.component] ?? {}).length || undefined}
-              onClick={() => onSelectGroup(group.id)}
-            />
-          ))}
+          {filteredComponentGroups.map((group) => {
+            const overrideCount = group.fields.filter(
+              (f) => componentValues[group.component]?.[f.name] !== f.defaultValue
+            ).length
+            return (
+              <NavButton
+                key={group.id}
+                active={group.id === activeGroupId}
+                label={group.title}
+                badge={overrideCount || undefined}
+                onClick={() => onSelectGroup(group.id)}
+              />
+            )
+          })}
           {filteredComponentGroups.length === 0 ? (
             <Typography.Text type="secondary" style={{ fontSize: 12, padding: '6px 10px' }}>
               No components match &quot;{componentFilter}&quot;.

@@ -38,7 +38,7 @@ function ShellBody() {
         <Divider style={{ marginTop: 0 }}>Live preview</Divider>
         <ConfigProvider theme={{ token: values, components: componentValues, algorithm: resolvedAlgorithm }}>
           <IconMapProvider value={iconMap}>
-            <LivePreview />
+            <LivePreview activeGroupId={activeGroupId} />
           </IconMapProvider>
         </ConfigProvider>
       </main>

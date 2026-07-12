@@ -46,11 +46,29 @@ updates `antd-design-kit.json`) — since components aren't vendored source here
 dependency-closure or npm-uninstall concern the way the sibling shadcn kit's `remove` has.
 
 **Phase 4 (this release):** per-component token editing — a searchable "Components" list in
-`/theme-editor` (55 components, 582 fields, generated from each component's own shipped
-`ComponentToken` interface via `scripts/extract-component-token-schema.mjs`) where every field
-defaults to "Inherited" (antd computes it internally from the current global tokens; there's no
-static default to show) with a per-field override toggle. Overrides live in `theme-config.ts`'s
-real `components: {...}` block and flow into the live preview exactly like global tokens do.
+`/theme-editor` (55 components, 574 fields, generated from each component's own shipped
+`ComponentToken` interface via `scripts/extract-component-token-schema.mjs`). Every field always
+shows a real, concrete value — antd's own actual computed default (obtained by calling each
+component's real `prepareComponentToken`/`initComponentToken` function against
+`theme.getDesignToken()`'s live AliasToken, not a placeholder), no "inherited" toggle state, the
+same "every field has a real starting value" model the sibling shadcn kit uses. Overrides live
+in `theme-config.ts`'s real `components: {...}` block and flow into the live preview exactly
+like global tokens do.
+
+**Theme editor live preview + color fields (this release):** clicking a component in the
+"Components" list mounts that component's *actual* `/design-system` demo section live under the
+editing `ConfigProvider` — the same approach the sibling shadcn kit uses (mount the real demo,
+not a hardcoded fixture) — via a per-project generated `live-preview.tsx`
+(`generateLivePreview` in `src/lib/codegen.ts`) that imports every selected component's demo
+module. Global-token-only groups (Colors/Typography/Layout/Motion/Behavior/Appearance/Icons)
+fall back to a small fixed multi-component preview. Every `color-hex` field (global seed colors
+excepted — those stay a direct color picker, since they're the source of truth other colors
+select from) renders as a searchable select of named colors (antd's preset palette + the
+theme's own semantic seed colors, each labeled with its live current hex) plus a "Custom…"
+option that drops into a full color picker — picking a name copies that color's current value
+in as a literal (antd's theme config is a plain object of literal values, not CSS variable
+references, so there's no live link back to the source token the way shadcn's `var(--token)`
+selects have).
 
 **CDN distribution (this release):** templates are fetched live from
 `github.com/Staunchglobal/antd-design-system-kit` via jsdelivr, pinned to the exact commit SHA

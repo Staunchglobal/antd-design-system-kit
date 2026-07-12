@@ -28,10 +28,28 @@
   `build-manifest.ts`, `google-fonts-link.ts`, `selection.ts`, and `selection-state.ts`.
 - Phase 4: per-component token editing. `scripts/extract-component-token-schema.mjs` walks each
   component's own shipped `ComponentToken` interface (`node_modules/antd/es/<dir>/style/
-  {token,index}.d.ts`) to generate `component-token-schema.generated.ts` (55 components, 582
-  fields) — no default value is recorded, since antd computes component tokens at render time
-  from the current seed/alias tokens rather than shipping a static default the way seed tokens
-  do. `/theme-editor` gains a searchable "Components" nav section; each field defaults to
-  "Inherited" with a per-field override toggle, and overrides are saved into `theme-config.ts`'s
-  real `components: {...}` block (validated against the schema in `sanitizeComponentOverrides`,
-  same allowlist-lookup approach as global token overrides).
+  {token,index}.d.ts`) to generate `component-token-schema.generated.ts` (55 components, 574
+  fields). `/theme-editor` gains a searchable "Components" nav section; overrides are saved into
+  `theme-config.ts`'s real `components: {...}` block (validated against the schema in
+  `sanitizeComponentOverrides`, same allowlist-lookup approach as global token overrides).
+- Fix: antd v6 deprecation warnings across the `/design-system` demo sections (Space
+  direction/split, Steps direction/items.description, Divider/Splitter type/layout, Anchor's
+  children-based API, Dropdown.Button, Input/InputNumber addonBefore/addonAfter, Alert message,
+  Drawer width, Spin size="default", Statistic valueStyle/Countdown, Timeline items.children/
+  dot) — a freshly scaffolded project's showcase now renders with a clean console.
+- Rework: per-component token defaults, live preview, and color fields to match the sibling
+  shadcn kit's UX. `extract-component-token-schema.mjs` now computes each field's REAL default
+  by calling antd's own `prepareComponentToken`/`initComponentToken` function (via the CJS
+  `antd/lib` build, since `antd/es`'s extensionless internal imports don't resolve under plain
+  Node ESM) against `theme.getDesignToken()`'s live AliasToken — every field always shows a
+  concrete value, no "inherited" toggle state. `live-preview.tsx` is now a per-project generated
+  file (`generateLivePreview` in `src/lib/codegen.ts`, mirrors `generateNavTs`/
+  `generateDesignSystemContent`'s pattern) that mounts the ACTUAL `/design-system` demo for
+  whichever component is selected in the nav, falling back to a small fixed preview only for
+  global-token-only groups; `theme-editor/page.tsx` (Next) / `ThemeEditorPage.tsx` (Vite) are
+  also now generated, baking in the literal selected-component-slug list so
+  `buildThemeManifest(themeConfig, { componentSlugs })` only builds nav/preview entries for
+  components this project actually has a demo for. Every `color-hex` field (besides the global
+  seed colors themselves) now renders as a select of named colors (antd's preset palette + the
+  theme's own seed colors, labeled with their live current hex) instead of a bare color picker,
+  with a "Custom…" option for anything else.

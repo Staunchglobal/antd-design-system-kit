@@ -12,7 +12,7 @@ import { pickComponents } from '../lib/prompt-components.js'
 import { navGroupsFor, demoFilesFor } from '../lib/selection.js'
 import { writeSelectionConfig, priorSelectionFor, recordFileHashes } from '../lib/selection-state.js'
 import { ALWAYS_SHARED_FILES, ALWAYS_VITE_FILES } from '../lib/managed-files.js'
-import { generateDesignSystemPage, generateNavTs } from '../lib/codegen.js'
+import { generateDesignSystemPage, generateLivePreview, generateNavTs, generateThemeEditorPageVite } from '../lib/codegen.js'
 import type { InitOptions } from './init-next.js'
 
 export async function runViteInit(project: ProjectInfo, pm: PackageManager, options: InitOptions) {
@@ -113,6 +113,24 @@ export async function runViteInit(project: ProjectInfo, pm: PackageManager, opti
     dryRun
   )
   log.success(`${dryRun ? 'Would generate' : 'Generated'} src/design-system/DesignSystemPage.tsx`)
+
+  writeGeneratedFile(
+    destRoot,
+    'theme-editor/ThemeEditorPage.tsx',
+    generateThemeEditorPageVite({ componentSlugs: [...selected].sort() }),
+    dryRun
+  )
+  writeGeneratedFile(
+    destRoot,
+    'theme-editor/_components/live-preview.tsx',
+    generateLivePreview({
+      navGroups,
+      designSystemImportBase: '@/design-system',
+      useClient: false,
+    }),
+    dryRun
+  )
+  log.success(`${dryRun ? 'Would generate' : 'Generated'} src/theme-editor/ThemeEditorPage.tsx and live-preview.tsx`)
 
   if (dryRun) {
     log.title('Wiring it up')

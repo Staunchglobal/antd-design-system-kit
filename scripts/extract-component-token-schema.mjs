@@ -1,32 +1,50 @@
 #!/usr/bin/env node
 /**
  * Regenerates template-antd-shared/src/lib/theme/component-token-schema.generated.ts from
- * antd's own shipped `.d.ts` files — no hand-authored field lists. Each component that
- * exposes a real, settable `ComponentToken` interface ships one at
- * `node_modules/antd/es/<dir>/style/{token,index}.d.ts`, still carrying real JSDoc
- * (`@desc`/`@descEN`) the same way the global `SeedToken` interface does (see
- * scripts/extract-token-schema.mjs). A handful of components (FloatButton, AutoComplete,
- * TimePicker, QRCode, ColorPicker's siblings, ConfigProvider, Watermark) either alias
- * `ComponentToken` to `object` (no user-settable tokens) or reuse another component's
- * tokens entirely — both correctly produce no interface to walk here and are skipped.
+ * antd's own shipped source — no hand-authored field lists, no placeholder defaults. Two real
+ * sources are combined, the same overall strategy as scripts/extract-token-schema.mjs:
  *
- * Unlike global seed tokens, component tokens have no static default value to record — antd
- * computes them at render time from the current seed/alias tokens (see e.g.
- * button/style/token.js's `prepareComponentToken`), so a field with no explicit override is
- * simply shown as "inherits from the global token" rather than trying to capture antd's
- * internal computed default (see plan §2).
+ *  - `node_modules/antd/es/<dir>/style/{token,index}.d.ts` — each component's own shipped
+ *    `ComponentToken` interface, still carrying real JSDoc (`@desc`/`@descEN`), parsed with
+ *    ts-morph for field names/labels/descriptions. A handful of components (FloatButton,
+ *    AutoComplete, TimePicker, QRCode, ConfigProvider, Watermark, ...) either alias
+ *    `ComponentToken` to `object` (no user-settable tokens) or reuse another component's
+ *    tokens entirely — both correctly produce no interface to walk and are skipped.
+ *  - `node_modules/antd/lib/<dir>/style/{token,index}.js` (the CJS build — antd's `es/` ESM
+ *    build uses extensionless internal imports that don't resolve under plain Node ESM
+ *    resolution, but the CJS build does) — each component's real `prepareComponentToken` /
+ *    `initComponentToken` function, called with `theme.getDesignToken()`'s live default
+ *    AliasToken (plus a `calc` helper via `@ant-design/cssinjs-utils`'s `genCalc('js')`, which
+ *    several components' prepare functions call internally) to get antd's actual computed
+ *    default for every field — the same values antd itself renders with out of the box.
+ *
+ * `message` and `notification` don't export their `prepareComponentToken` publicly (it's a
+ * local, unexported const in both — confirmed by reading the source directly), so their two
+ * known fields are computed by mirroring that exact local formula by hand below
+ * (MANUAL_COMPUTE) rather than guessing a placeholder. Any field whose computed value comes
+ * back `undefined` (e.g. notification's `colorSuccessBg`/`colorErrorBg`/etc., which really are
+ * `undefined` in antd's own default — resolved per-notification-type at render time, not a
+ * static default) is dropped from the schema entirely rather than faked.
+ *
+ * `valueType` is derived from the REAL computed value's JS type (not a static .d.ts type-text
+ * guess) wherever a default was successfully computed — more accurate, since the runtime shape
+ * is ground truth. The `Color`/`Bg`-suffix name heuristic still distinguishes an actual color
+ * string from a generic one (e.g. a box-shadow or `linear-gradient(...)` string).
  *
  * Run manually with `npm run build:component-token-schema` after bumping the `antd`
  * devDependency — not run at end-user install time, same pattern as token-schema.generated.ts.
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { Project } from 'ts-morph'
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const antdEsDir = path.join(root, 'node_modules/antd/es')
+const antdLibDir = path.join(root, 'node_modules/antd/lib')
 const outPath = path.join(root, 'template-antd-shared/src/lib/theme/component-token-schema.generated.ts')
+const require = createRequire(import.meta.url)
 
 /**
  * Mirrors the slugs in src/generated/registry.ts's COMPONENTS keys (kept as a local literal,
@@ -58,18 +76,72 @@ function humanize(slug) {
   return slug.split('-').map((part) => part[0].toUpperCase() + part.slice(1)).join(' ')
 }
 
-function valueTypeFor(name, tsTypeText) {
-  if (tsTypeText === 'boolean') return 'boolean'
-  if (tsTypeText === 'number') return 'number'
-  if (tsTypeText === 'string') {
-    if (/Color/.test(name) || /Bg([A-Z]|$)/.test(name) || /^color[A-Z]/.test(name)) return 'color-hex'
-    return 'string'
-  }
-  return 'string' // number|string unions, CSSProperties<...>-derived types, etc. — freeform text is the safe fallback
+function isColorField(name) {
+  return /Color/.test(name) || /Bg([A-Z]|$)/.test(name) || /^color[A-Z]/.test(name)
 }
+
+function valueTypeForComputed(name, value) {
+  if (typeof value === 'boolean') return 'boolean'
+  if (typeof value === 'number') return 'number'
+  return isColorField(name) ? 'color-hex' : 'string'
+}
+
+// ---- Real computed defaults, via antd's own prepareComponentToken/initComponentToken -------
+
+const { theme } = require('antd')
+const { genCalc } = require('@ant-design/cssinjs-utils')
+const aliasToken = { ...theme.getDesignToken(), calc: genCalc('js') }
+
+// message/notification's real prepareComponentToken is a local, unexported const — mirrors
+// that exact formula (read directly from node_modules/antd/lib/{message,notification}/style/
+// index.js) rather than guessing. CONTAINER_MAX_OFFSET is antd's own real constant, not a
+// hand-picked number.
+const { CONTAINER_MAX_OFFSET } = require('antd/lib/_util/hooks/useZIndex.js')
+const MANUAL_COMPUTE = {
+  message: (token) => ({
+    zIndexPopup: token.zIndexPopupBase + CONTAINER_MAX_OFFSET + 10,
+    contentBg: token.colorBgElevated,
+  }),
+  notification: (token) => ({
+    zIndexPopup: token.zIndexPopupBase + CONTAINER_MAX_OFFSET + 50,
+    width: 384,
+  }),
+}
+
+function computeDefaultsFor(slug, dir) {
+  if (MANUAL_COMPUTE[slug]) return MANUAL_COMPUTE[slug](aliasToken)
+
+  let mod = null
+  for (const file of ['token.js', 'index.js']) {
+    const p = path.join(antdLibDir, dir, 'style', file)
+    if (fs.existsSync(p)) {
+      try {
+        mod = require(p)
+        break
+      } catch {
+        // fall through to the next candidate file
+      }
+    }
+  }
+  if (!mod) return null
+
+  const fnName =
+    ['prepareComponentToken', 'initComponentToken'].find((n) => typeof mod[n] === 'function') ??
+    Object.keys(mod).find((k) => /^(prepare|init)[A-Za-z]*ComponentToken$/i.test(k) && typeof mod[k] === 'function')
+  if (!fnName) return null
+
+  try {
+    return mod[fnName](aliasToken)
+  } catch {
+    return null
+  }
+}
+
+// ---- Field catalog, via ts-morph over antd's shipped .d.ts ---------------------------------
 
 const project = new Project({ skipAddingFilesFromTsConfig: true, skipFileDependencyResolution: true })
 const groups = []
+let droppedNoDefault = 0
 
 for (const slug of [...COMPONENT_SLUGS].sort()) {
   const dir = DIR_OVERRIDES[slug] ?? slug
@@ -88,6 +160,8 @@ for (const slug of [...COMPONENT_SLUGS].sort()) {
     continue // e.g. FloatButton's `export type ComponentToken = object` — no user-settable tokens
   }
 
+  const computed = computeDefaultsFor(slug, dir)
+
   const fields = []
   for (const prop of iface.getType().getProperties()) {
     const decl = prop.getValueDeclaration()
@@ -100,13 +174,18 @@ for (const slug of [...COMPONENT_SLUGS].sort()) {
 
     const tagText = (tagName) =>
       jsDocs.flatMap((doc) => doc.getTags()).find((t) => t.getTagName() === tagName)?.getCommentText()?.trim()
-
     const descEN = tagText('descEN')
-    const tsTypeText = decl.getType().getText()
+
+    const defaultValue = computed ? computed[name] : undefined
+    if (defaultValue === undefined || (typeof defaultValue !== 'string' && typeof defaultValue !== 'number' && typeof defaultValue !== 'boolean')) {
+      droppedNoDefault++
+      continue // no real computed default (uncomputable component, or a field antd itself leaves undefined) — don't fake one
+    }
 
     fields.push({
       name,
-      valueType: valueTypeFor(name, tsTypeText),
+      valueType: valueTypeForComputed(name, defaultValue),
+      defaultValue,
       label: humanize(name.replace(/([a-z0-9])([A-Z])/g, '$1-$2')),
       description: descEN || undefined,
     })
@@ -123,9 +202,10 @@ const body = groups
       .map((f) => {
         const lines = [
           `      { name: ${JSON.stringify(f.name)}, valueType: ${JSON.stringify(f.valueType)}, label: ${JSON.stringify(f.label)},`,
+          `        defaultValue: ${JSON.stringify(f.defaultValue)},`,
         ]
         if (f.description) lines.push(`        description: ${JSON.stringify(f.description)} },`)
-        else lines[0] = lines[0].replace(/,$/, ' },')
+        else lines[lines.length - 1] = lines[lines.length - 1].replace(/,$/, ' },')
         return lines.join('\n')
       })
       .join('\n')
@@ -141,12 +221,14 @@ ${fieldLines}
   .join('\n')
 
 const out = `/**
- * Ant Design's per-component token catalog (component name, field name, label, description),
- * generated from each component's own shipped \`ComponentToken\` interface
- * (\`node_modules/antd/es/<dir>/style/{token,index}.d.ts\`) by
- * \`scripts/extract-component-token-schema.mjs\`. No default value is recorded — unlike global
- * seed tokens, antd computes component tokens at render time from the current seed/alias
- * tokens, so an unset field simply means "inherits the computed default" (see build-manifest.ts).
+ * Ant Design's per-component token catalog (component name, field name, label, description,
+ * and antd's own REAL computed default), generated from each component's own shipped
+ * \`ComponentToken\` interface (\`node_modules/antd/es/<dir>/style/{token,index}.d.ts\`) plus its
+ * real \`prepareComponentToken\`/\`initComponentToken\` function (\`node_modules/antd/lib/<dir>/
+ * style/{token,index}.js\`, called with \`theme.getDesignToken()\`'s default AliasToken) by
+ * \`scripts/extract-component-token-schema.mjs\`. Every field here has a real, concrete default
+ * — the same value antd itself renders with — never a placeholder; fields antd computes as
+ * genuinely \`undefined\` by design are simply not included.
  * Regenerate with \`node scripts/extract-component-token-schema.mjs\` after bumping antd's
  * version — not run at end-user install time, same pattern as token-schema.generated.ts.
  */
@@ -155,6 +237,7 @@ export type ComponentTokenValueType = 'color-hex' | 'number' | 'boolean' | 'stri
 export type ComponentTokenSchemaEntry = {
   name: string
   valueType: ComponentTokenValueType
+  defaultValue: string | number | boolean
   label: string
   description?: string
 }
@@ -175,4 +258,6 @@ ${body}
 
 fs.writeFileSync(outPath, out)
 const totalFields = groups.reduce((n, g) => n + g.fields.length, 0)
-console.log(`Wrote ${path.relative(root, outPath)} (${groups.length} components, ${totalFields} fields)`)
+console.log(
+  `Wrote ${path.relative(root, outPath)} (${groups.length} components, ${totalFields} fields, ${droppedNoDefault} field(s) dropped — no real computed default)`
+)

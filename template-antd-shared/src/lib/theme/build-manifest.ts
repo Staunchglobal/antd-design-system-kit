@@ -17,7 +17,7 @@ import type {
  * shadcn kit's generate-theme-manifest.mjs. `theme-config.ts` is real TypeScript the app
  * already imports at runtime, so this just runs as a plain function.
  */
-export function buildThemeManifest(themeConfig: ThemeConfig): ThemeManifest {
+export function buildThemeManifest(themeConfig: ThemeConfig, options?: { componentSlugs?: string[] }): ThemeManifest {
   const token = (themeConfig.token ?? {}) as Record<string, TokenFieldValue>
   const byGroup = new Map<string, ThemeTokenField[]>()
 
@@ -38,19 +38,22 @@ export function buildThemeManifest(themeConfig: ThemeConfig): ThemeManifest {
   return {
     version: 1,
     groups,
-    componentGroups: buildComponentTokenGroups(themeConfig),
+    componentGroups: buildComponentTokenGroups(themeConfig, options?.componentSlugs),
     algorithm: algorithmChoiceFromConfig(themeConfig),
   }
 }
 
-function buildComponentTokenGroups(themeConfig: ThemeConfig): ThemeComponentTokenGroup[] {
+function buildComponentTokenGroups(themeConfig: ThemeConfig, componentSlugs?: string[]): ThemeComponentTokenGroup[] {
   const components = (themeConfig.components ?? {}) as Record<string, Record<string, TokenFieldValue> | undefined>
+  const allowed = componentSlugs ? new Set(componentSlugs) : null
+  const schema = allowed ? COMPONENT_TOKEN_SCHEMA.filter((g) => allowed.has(g.slug)) : COMPONENT_TOKEN_SCHEMA
 
-  return COMPONENT_TOKEN_SCHEMA.map((group) => {
+  return schema.map((group) => {
     const overrides = components[group.component] ?? {}
     const fields: ThemeComponentTokenField[] = group.fields.map((entry) => {
       const isOverridden = Object.prototype.hasOwnProperty.call(overrides, entry.name)
-      return { ...entry, value: isOverridden ? overrides[entry.name] : undefined, isOverridden }
+      const value = isOverridden ? overrides[entry.name] : entry.defaultValue
+      return { ...entry, value, isOverridden }
     })
     return { id: group.slug, slug: group.slug, component: group.component, title: group.title, fields }
   })

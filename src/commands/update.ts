@@ -12,7 +12,10 @@ import {
   generateDesignSystemContent,
   generateDesignSystemPage,
   generateDesignSystemPageShell,
+  generateLivePreview,
   generateNavTs,
+  generateThemeEditorPage,
+  generateThemeEditorPageVite,
 } from '../lib/codegen.js'
 
 export type UpdateOptions = {
@@ -105,7 +108,23 @@ export async function update(options: UpdateOptions) {
         generateDesignSystemPageShell({ contentImport: '@/app/design-system/_components/design-system-content' }),
         dryRun
       )
-      log.success('Regenerated nav.ts, design-system-content.tsx, and page.tsx.')
+      writeGeneratedFile(
+        destRoot,
+        'app/theme-editor/page.tsx',
+        generateThemeEditorPage({ componentSlugs: [...selected].sort() }),
+        dryRun
+      )
+      writeGeneratedFile(
+        destRoot,
+        'app/theme-editor/_components/live-preview.tsx',
+        generateLivePreview({
+          navGroups,
+          designSystemImportBase: '@/app/design-system',
+          useClient: true,
+        }),
+        dryRun
+      )
+      log.success('Regenerated nav.ts, design-system-content.tsx, page.tsx, theme-editor page, and live-preview.tsx.')
 
       recordFileHashes(
         root,
@@ -187,7 +206,23 @@ export async function update(options: UpdateOptions) {
       }),
       dryRun
     )
-    log.success('Regenerated nav.ts and DesignSystemPage.tsx.')
+    writeGeneratedFile(
+      destRoot,
+      'theme-editor/ThemeEditorPage.tsx',
+      generateThemeEditorPageVite({ componentSlugs: [...selected].sort() }),
+      dryRun
+    )
+    writeGeneratedFile(
+      destRoot,
+      'theme-editor/_components/live-preview.tsx',
+      generateLivePreview({
+        navGroups,
+        designSystemImportBase: '@/design-system',
+        useClient: false,
+      }),
+      dryRun
+    )
+    log.success('Regenerated nav.ts, DesignSystemPage.tsx, ThemeEditorPage.tsx, and live-preview.tsx.')
 
     recordFileHashes(
       root,

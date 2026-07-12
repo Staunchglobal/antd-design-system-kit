@@ -28,7 +28,6 @@ export const ALWAYS_NEXT_FILES: string[] = [
   'app/theme-provider.tsx',
   'app/design-system/_lib/showcase.tsx',
   'app/design-system/_components/sidebar-nav.tsx',
-  'app/theme-editor/page.tsx',
   'app/theme-editor/_lib/theme-editor-context.tsx',
   'app/theme-editor/_components/theme-editor-shell.tsx',
   'app/theme-editor/_components/theme-nav.tsx',
@@ -37,14 +36,12 @@ export const ALWAYS_NEXT_FILES: string[] = [
   'app/theme-editor/_components/icons-form.tsx',
   'app/theme-editor/_components/appearance-form.tsx',
   'app/theme-editor/_components/component-token-form.tsx',
-  'app/theme-editor/_components/live-preview.tsx',
   'app/api/theme/save/route.ts',
 ]
 
 export const ALWAYS_VITE_FILES: string[] = [
   'design-system/_lib/showcase.tsx',
   'design-system/_components/sidebar-nav.tsx',
-  'theme-editor/ThemeEditorPage.tsx',
   'theme-editor/_lib/theme-editor-context.tsx',
   'theme-editor/_components/theme-editor-shell.tsx',
   'theme-editor/_components/theme-nav.tsx',
@@ -53,5 +50,4 @@ export const ALWAYS_VITE_FILES: string[] = [
   'theme-editor/_components/icons-form.tsx',
   'theme-editor/_components/appearance-form.tsx',
   'theme-editor/_components/component-token-form.tsx',
-  'theme-editor/_components/live-preview.tsx',
 ]
